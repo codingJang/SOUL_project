@@ -12,5 +12,8 @@ Currently, we have built a DQN-based RL Agent class (DQNAgent) and tested its ab
 
 ## Progress
 
+Below are the descriptions for important directories:
 
+**Source/CurrencyPricePredictionLSTM:** We examined the predictive capacity of Long Short-Term Memory (LSTM) models in forecasting currency prices. Based on our analysis, predictions using LSTM models and OHLCV (Open, High, Low, Close, and Volume) data did not provide adequate predictive accuracy. As a result, we have shifted our focus to multi-agent reinforcement learning and adopting a simulation-based approach.
 
+**Source/PreprocessingInternationalRelationsData:** In our simulation, agents can adjust the amount of rewards to share by adjusting their affinity. However, the initial affinity should be able to reflect the current diplomacies. We used Defense Cooperation Agreement Dataset by Brandon J. Kinne, and a web-parsed version of International Organization Participation data from cia.gov to create realistic affinity graphs between different countires.
