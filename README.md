@@ -1,6 +1,6 @@
 # Project SOUL
 
-Contributors: Yejun Jang, Juntae Kim, Inhoo Suh [HAHAHA]
+Contributors: Yejun Jang, Juntae Kim, Inhoo Suh
 
 ## Introduction
 
