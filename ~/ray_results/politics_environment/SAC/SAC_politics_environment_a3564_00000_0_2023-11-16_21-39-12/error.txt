@@ -1,0 +1,89 @@
+Failure # 1 (occurred at 2023-11-16_21-39-20)
+The actor died because of an error raised in its creation task, [36mray::SAC.__init__()[39m (pid=43556, ip=127.0.0.1, actor_id=07c3b3ebeb55d1c1255d6efa01000000, repr=SAC)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/worker_set.py", line 227, in _setup
+    self.add_workers(
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/worker_set.py", line 593, in add_workers
+    raise result.get()
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/actor_manager.py", line 481, in __fetch_result
+    result = ray.get(r)
+             ^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::RolloutWorker.__init__()[39m (pid=43565, ip=127.0.0.1, actor_id=e5e5d86e6f1efe4bcefa1cc301000000, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x17432d3d0>)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/pre_checks/env.py", line 338, in check_multiagent_environments
+    raise ValueError(error)
+ValueError: The observation collected from env.reset was not contained within your env's observation space. Its possible that there was a typemismatch (for example observations of np.float32 and a space ofnp.float64 observations), or that one of the sub-observations wasout of bounds
+
+ reset_obs: {'agent_0': array([1., 0., 0., 0., 1., 0., 0., 0., 1.]), 'agent_1': array([1., 0., 0., 0., 1., 0., 0., 0., 1.]), 'agent_2': array([1., 0., 0., 0., 1., 0., 0., 0., 1.])}
+
+ env.observation_space_sample(): {'agent_0': array([0.93600875, 1.3703973 , 1.828697  , 0.0542286 , 1.3576841 ,
+       1.8751574 , 1.6327667 , 0.78981686, 0.7444303 ], dtype=float32), 'agent_1': array([0.3998999 , 1.7314242 , 1.562042  , 1.5208255 , 0.29784206,
+       0.46259427, 1.0945754 , 1.111988  , 0.91655296], dtype=float32), 'agent_2': array([0.92627734, 0.23079778, 0.37736335, 0.12006311, 1.9681942 ,
+       0.6277473 , 0.726591  , 1.0320932 , 0.3336226 ], dtype=float32)}
+
+ 
+
+During handling of the above exception, another exception occurred:
+
+[36mray::RolloutWorker.__init__()[39m (pid=43565, ip=127.0.0.1, actor_id=e5e5d86e6f1efe4bcefa1cc301000000, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x17432d3d0>)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/rollout_worker.py", line 404, in __init__
+    check_env(self.env, self.config)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/pre_checks/env.py", line 96, in check_env
+    raise ValueError(
+ValueError: Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/pre_checks/env.py", line 81, in check_env
+    check_multiagent_environments(env)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/pre_checks/env.py", line 338, in check_multiagent_environments
+    raise ValueError(error)
+ValueError: The observation collected from env.reset was not contained within your env's observation space. Its possible that there was a typemismatch (for example observations of np.float32 and a space ofnp.float64 observations), or that one of the sub-observations wasout of bounds
+
+ reset_obs: {'agent_0': array([1., 0., 0., 0., 1., 0., 0., 0., 1.]), 'agent_1': array([1., 0., 0., 0., 1., 0., 0., 0., 1.]), 'agent_2': array([1., 0., 0., 0., 1., 0., 0., 0., 1.])}
+
+ env.observation_space_sample(): {'agent_0': array([0.93600875, 1.3703973 , 1.828697  , 0.0542286 , 1.3576841 ,
+       1.8751574 , 1.6327667 , 0.78981686, 0.7444303 ], dtype=float32), 'agent_1': array([0.3998999 , 1.7314242 , 1.562042  , 1.5208255 , 0.29784206,
+       0.46259427, 1.0945754 , 1.111988  , 0.91655296], dtype=float32), 'agent_2': array([0.92627734, 0.23079778, 0.37736335, 0.12006311, 1.9681942 ,
+       0.6277473 , 0.726591  , 1.0320932 , 0.3336226 ], dtype=float32)}
+
+ 
+
+The above error has been found in your environment! We've added a module for checking your custom environments. It may cause your experiment to fail if your environment is not set up correctly. You can disable this behavior via calling `config.environment(disable_env_checking=True)`. You can run the environment checking module standalone by calling ray.rllib.utils.check_env([your env]).
+
+During handling of the above exception, another exception occurred:
+
+[36mray::SAC.__init__()[39m (pid=43556, ip=127.0.0.1, actor_id=07c3b3ebeb55d1c1255d6efa01000000, repr=SAC)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/algorithms/sac/sac.py", line 354, in __init__
+    super().__init__(*args, **kwargs)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/deprecation.py", line 106, in patched_init
+    return obj_init(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/algorithms/algorithm.py", line 517, in __init__
+    super().__init__(
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/tune/trainable/trainable.py", line 161, in __init__
+    self.setup(copy.deepcopy(self.config))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/algorithms/algorithm.py", line 639, in setup
+    self.workers = WorkerSet(
+                   ^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/worker_set.py", line 179, in __init__
+    raise e.args[0].args[2]
+ValueError: Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/pre_checks/env.py", line 81, in check_env
+    check_multiagent_environments(env)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/pre_checks/env.py", line 338, in check_multiagent_environments
+    raise ValueError(error)
+ValueError: The observation collected from env.reset was not contained within your env's observation space. Its possible that there was a typemismatch (for example observations of np.float32 and a space ofnp.float64 observations), or that one of the sub-observations wasout of bounds
+
+ reset_obs: {'agent_0': array([1., 0., 0., 0., 1., 0., 0., 0., 1.]), 'agent_1': array([1., 0., 0., 0., 1., 0., 0., 0., 1.]), 'agent_2': array([1., 0., 0., 0., 1., 0., 0., 0., 1.])}
+
+ env.observation_space_sample(): {'agent_0': array([0.93600875, 1.3703973 , 1.828697  , 0.0542286 , 1.3576841 ,
+       1.8751574 , 1.6327667 , 0.78981686, 0.7444303 ], dtype=float32), 'agent_1': array([0.3998999 , 1.7314242 , 1.562042  , 1.5208255 , 0.29784206,
+       0.46259427, 1.0945754 , 1.111988  , 0.91655296], dtype=float32), 'agent_2': array([0.92627734, 0.23079778, 0.37736335, 0.12006311, 1.9681942 ,
+       0.6277473 , 0.726591  , 1.0320932 , 0.3336226 ], dtype=float32)}
+
+ 
+
+The above error has been found in your environment! We've added a module for checking your custom environments. It may cause your experiment to fail if your environment is not set up correctly. You can disable this behavior via calling `config.environment(disable_env_checking=True)`. You can run the environment checking module standalone by calling ray.rllib.utils.check_env([your env]).

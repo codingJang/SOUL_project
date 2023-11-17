@@ -1,0 +1,46 @@
+Failure # 1 (occurred at 2023-11-16_21-29-09)
+The actor died because of an error raised in its creation task, [36mray::SAC.__init__()[39m (pid=42580, ip=127.0.0.1, actor_id=b1ea00a2d190f98ae678c3e501000000, repr=SAC)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/worker_set.py", line 227, in _setup
+    self.add_workers(
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/worker_set.py", line 593, in add_workers
+    raise result.get()
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/actor_manager.py", line 481, in __fetch_result
+    result = ray.get(r)
+             ^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::RolloutWorker.__init__()[39m (pid=42585, ip=127.0.0.1, actor_id=6f5adaf0227c8603eca590ca01000000, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x133aadc50>)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/rollout_worker.py", line 397, in __init__
+    self.env = env_creator(copy.deepcopy(self.env_context))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jang-yejun/Projects/VSCodeProjects/SOUL_project/Source/RLlibPractice/RLlibpractice_politics_env.py", line 31, in <lambda>
+    register_env(env_name, lambda config: ParallelPettingZooEnv(env_creator(config)))
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/env/wrappers/pettingzoo_env.py", line 158, in __init__
+    self.observation_space = gym.spaces.Dict(self.par_env.observation_spaces)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PoliticsEnv' object has no attribute 'observation_spaces'
+
+During handling of the above exception, another exception occurred:
+
+[36mray::SAC.__init__()[39m (pid=42580, ip=127.0.0.1, actor_id=b1ea00a2d190f98ae678c3e501000000, repr=SAC)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/algorithms/sac/sac.py", line 354, in __init__
+    super().__init__(*args, **kwargs)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/deprecation.py", line 106, in patched_init
+    return obj_init(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/algorithms/algorithm.py", line 517, in __init__
+    super().__init__(
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/tune/trainable/trainable.py", line 161, in __init__
+    self.setup(copy.deepcopy(self.config))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/algorithms/algorithm.py", line 639, in setup
+    self.workers = WorkerSet(
+                   ^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/worker_set.py", line 179, in __init__
+    raise e.args[0].args[2]
+AttributeError: 'PoliticsEnv' object has no attribute 'observation_spaces'
