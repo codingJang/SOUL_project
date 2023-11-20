@@ -18,6 +18,7 @@ from ray.rllib.utils.torch_utils import FLOAT_MAX
 from ray.tune.registry import register_env
 
 from pettingzoo.classic import leduc_holdem_v4
+from pettingzoo.mpe import simple_spread_v3
 
 torch, nn = try_import_torch()
 
@@ -76,20 +77,20 @@ if __name__ == "__main__":
     # function that outputs the environment you wish to register.
 
     def env_creator():
-        env = leduc_holdem_v4.env()
+        env = simple_spread_v3.env()
         return env
 
-    env_name = "leduc_holdem_v4"
+    env_name = "simple_spread_v3"
     register_env(env_name, lambda config: PettingZooEnv(env_creator()))
 
     test_env = PettingZooEnv(env_creator())
-    obs_space = test_env.observation_space['player_0']
-    act_space = test_env.action_space['player_0']
+    obs_space = test_env.observation_space['agent_0']
+    act_space = test_env.action_space['agent_0']
 
     config = (
         DQNConfig()
         .environment(env=env_name)
-        .rollouts(num_rollout_workers=8, rollout_fragment_length=30)
+        .rollouts(num_rollout_workers=87, rollout_fragment_length=30)
         .training(
             train_batch_size=200,
             hiddens=[],
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     tune.run(
         alg_name,
         name="DQN",
-        stop={"timesteps_total": 10000},
+        stop={"timesteps_total": 100000},
         checkpoint_freq=10,
         config=config.to_dict(),
     )
