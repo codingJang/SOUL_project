@@ -1,0 +1,55 @@
+Failure # 1 (occurred at 2023-11-16_19-43-30)
+The actor died because of an error raised in its creation task, [36mray::SAC.__init__()[39m (pid=37133, ip=127.0.0.1, actor_id=0841221254dab0161661af8101000000, repr=SAC)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/worker_set.py", line 227, in _setup
+    self.add_workers(
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/worker_set.py", line 593, in add_workers
+    raise result.get()
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/actor_manager.py", line 481, in __fetch_result
+    result = ray.get(r)
+             ^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::RolloutWorker.__init__()[39m (pid=37141, ip=127.0.0.1, actor_id=e7565b87fe144e082653107f01000000, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x13c5e8850>)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/rollout_worker.py", line 525, in __init__
+    self._update_policy_map(policy_dict=self.policy_dict)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/rollout_worker.py", line 1704, in _update_policy_map
+    updated_policy_dict = self._get_complete_policy_specs_dict(policy_dict)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/rollout_worker.py", line 1782, in _get_complete_policy_specs_dict
+    preprocessor = ModelCatalog.get_preprocessor_for_space(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/models/catalog.py", line 780, in get_preprocessor_for_space
+    cls = get_preprocessor(
+          ^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/models/preprocessors.py", line 384, in get_preprocessor
+    _legacy_patch_shapes(space)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/models/preprocessors.py", line 440, in _legacy_patch_shapes
+    return space.shape
+           ^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'shape'
+
+During handling of the above exception, another exception occurred:
+
+[36mray::SAC.__init__()[39m (pid=37133, ip=127.0.0.1, actor_id=0841221254dab0161661af8101000000, repr=SAC)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/algorithms/sac/sac.py", line 354, in __init__
+    super().__init__(*args, **kwargs)
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/utils/deprecation.py", line 106, in patched_init
+    return obj_init(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/algorithms/algorithm.py", line 517, in __init__
+    super().__init__(
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/tune/trainable/trainable.py", line 161, in __init__
+    self.setup(copy.deepcopy(self.config))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/algorithms/algorithm.py", line 639, in setup
+    self.workers = WorkerSet(
+                   ^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.11/site-packages/ray/rllib/evaluation/worker_set.py", line 179, in __init__
+    raise e.args[0].args[2]
+AttributeError: 'list' object has no attribute 'shape'

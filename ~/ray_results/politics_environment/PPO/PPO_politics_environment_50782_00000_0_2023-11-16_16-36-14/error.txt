@@ -1,0 +1,71 @@
+Failure # 1 (occurred at 2023-11-16_16-36-29)
+The actor died because of an error raised in its creation task, [36mray::PPO.__init__()[39m (pid=21058, ip=127.0.0.1, actor_id=a109283f37bbcdf7c15e4a2901000000, repr=PPO)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/evaluation/worker_set.py", line 227, in _setup
+    self.add_workers(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/evaluation/worker_set.py", line 593, in add_workers
+    raise result.get()
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/utils/actor_manager.py", line 481, in __fetch_result
+    result = ray.get(r)
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::RolloutWorker.__init__()[39m (pid=21075, ip=127.0.0.1, actor_id=b03e14eb51ff58954acd487701000000, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x7f93f90fdfa0>)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/evaluation/rollout_worker.py", line 525, in __init__
+    self._update_policy_map(policy_dict=self.policy_dict)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/evaluation/rollout_worker.py", line 1727, in _update_policy_map
+    self._build_policy_map(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/evaluation/rollout_worker.py", line 1838, in _build_policy_map
+    new_policy = create_policy_for_framework(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/utils/policy.py", line 141, in create_policy_for_framework
+    return policy_class(observation_space, action_space, merged_config)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/algorithms/ppo/ppo_torch_policy.py", line 49, in __init__
+    TorchPolicyV2.__init__(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/policy/torch_policy_v2.py", line 92, in __init__
+    model = self.make_rl_module()
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/policy/policy.py", line 431, in make_rl_module
+    marl_module = marl_spec.build()
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/marl_module.py", line 462, in build
+    module = self.marl_module_class(module_config)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/rl_module.py", line 377, in new_init
+    previous_init(self, *args, **kwargs)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/marl_module.py", line 58, in __init__
+    super().__init__(config or MultiAgentRLModuleConfig())
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/rl_module.py", line 369, in __init__
+    self.setup()
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/marl_module.py", line 65, in setup
+    self._rl_modules[module_id] = module_spec.build()
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/rl_module.py", line 104, in build
+    module = self.module_class(module_config)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/rl_module.py", line 377, in new_init
+    previous_init(self, *args, **kwargs)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/rl_module.py", line 377, in new_init
+    previous_init(self, *args, **kwargs)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/torch/torch_rl_module.py", line 82, in __init__
+    RLModule.__init__(self, *args, **kwargs)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/rl_module.py", line 369, in __init__
+    self.setup()
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/algorithms/ppo/ppo_rl_module.py", line 20, in setup
+    catalog = self.config.get_catalog()
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/rl_module/rl_module.py", line 189, in get_catalog
+    return self.catalog_class(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/algorithms/ppo/ppo_catalog.py", line 69, in __init__
+    super().__init__(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/models/catalog.py", line 111, in __init__
+    self._determine_components_hook()
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/models/catalog.py", line 131, in _determine_components_hook
+    self._encoder_config = self._get_encoder_config(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/core/models/catalog.py", line 308, in _get_encoder_config
+    model_config_dict["conv_filters"] = get_filter_config(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/models/utils.py", line 226, in get_filter_config
+    raise ValueError(
+ValueError: No default configuration for obs shape [3, 3, 3], you must specify `conv_filters` manually as a model option. Default configurations are only available for inputs of the following shapes: [42, 42, K], [84, 84, K], [64, 64, K], [10, 10, K], [240, 320, K], and [480, 640, K]. You may alternatively want to use a custom model or preprocessor.
+
+During handling of the above exception, another exception occurred:
+
+[36mray::PPO.__init__()[39m (pid=21058, ip=127.0.0.1, actor_id=a109283f37bbcdf7c15e4a2901000000, repr=PPO)
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 517, in __init__
+    super().__init__(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/tune/trainable/trainable.py", line 161, in __init__
+    self.setup(copy.deepcopy(self.config))
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/algorithms/algorithm.py", line 639, in setup
+    self.workers = WorkerSet(
+  File "/Users/jang-yejun/opt/anaconda3/lib/python3.9/site-packages/ray/rllib/evaluation/worker_set.py", line 179, in __init__
+    raise e.args[0].args[2]
+ValueError: No default configuration for obs shape [3, 3, 3], you must specify `conv_filters` manually as a model option. Default configurations are only available for inputs of the following shapes: [42, 42, K], [84, 84, K], [64, 64, K], [10, 10, K], [240, 320, K], and [480, 640, K]. You may alternatively want to use a custom model or preprocessor.

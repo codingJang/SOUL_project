@@ -90,7 +90,11 @@ if __name__ == "__main__":
     config = (
         DQNConfig()
         .environment(env=env_name)
+<<<<<<< HEAD:Source/RLlibPractice/RLlibpractice.py
         .rollouts(num_rollout_workers=87, rollout_fragment_length=30)
+=======
+        .rollouts(num_rollout_workers=7, rollout_fragment_length=30)
+>>>>>>> bd0dd00a89023e16a0e17e0c72b37aa41eead433:Source/RLlibPractice/RLlibpractice_Leduc_Holdem.py
         .training(
             train_batch_size=200,
             hiddens=[],
