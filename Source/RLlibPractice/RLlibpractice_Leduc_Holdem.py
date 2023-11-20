@@ -89,7 +89,7 @@ if __name__ == "__main__":
     config = (
         DQNConfig()
         .environment(env=env_name)
-        .rollouts(num_rollout_workers=8, rollout_fragment_length=30)
+        .rollouts(num_rollout_workers=7, rollout_fragment_length=30)
         .training(
             train_batch_size=200,
             hiddens=[],

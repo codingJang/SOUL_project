@@ -11,7 +11,7 @@ from ray.rllib.utils.numpy import one_hot
 
 
 N = 3
-delta = 0.001
+delta = 0.00001
 obs_space = Box(low=0, high=2, shape=(N * N, ))
 act_space = Box(low=np.full(2*N, -np.inf), high=np.full(2*N, np.inf), shape=(2*N,))
 
@@ -64,6 +64,9 @@ class PoliticsEnv(ParallelEnv):
     def action_space(self, agent):
         return act_space
     
+    def get_agent_ids(self):
+        return self.agents
+
     def render(self):
         if self.render_mode is None:
             gymnasium.logger.warn(
@@ -82,11 +85,6 @@ class PoliticsEnv(ParallelEnv):
         observations = {agent:self.affinity.flatten() for agent in self.agents}
         infos = {agent:{} for agent in self.agents}
         return observations, infos
-    
-    def decimal_to_fixed_binary(self, num, digits):
-        if num >= 2**digits:
-            raise ValueError("The number is too large to be represented in the specified number of digits.")
-        return 
 
     def step(self, actions):
         invites = []
@@ -100,7 +98,8 @@ class PoliticsEnv(ParallelEnv):
             accept_prob = sigmoid(accept_pref)
             invite_choice = np.random.choice(self.num_agents, p=invite_prob)
             invite = one_hot(invite_choice, depth=self.num_agents)
-            accept = np.array([np.random.choice(2, p=[accept_prob[i], 1-accept_prob[i]]) for i in range(self.num_agents)])
+            accept = np.random.uniform(size=self.num_agents) < accept_prob
+
             invite[i] = 0
             accept[i] = 0
             invites.append(invite)
@@ -134,7 +133,8 @@ class PoliticsEnv(ParallelEnv):
 
 
 if __name__ == "__main__":
-    from pettingzoo.test import parallel_api_test
+    from pettingzoo.test import parallel_api_test, render_test
 
     env = PoliticsEnv()
-    parallel_api_test(env, num_cycles=1_000)
+    # parallel_api_test(env, num_cycles=1_000)
+    render_test(PoliticsEnv)
