@@ -12,7 +12,8 @@ from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from ray.tune.registry import register_env
 from ray.rllib.env import BaseEnv
-from ray.rllib.evaluation import Episode, RolloutWorker
+from ray.rllib.evaluation.episode_v2 import EpisodeV2
+from ray.rllib.evaluation import RolloutWorker
 from ray.rllib.policy import Policy
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.utils.annotations import override
@@ -25,19 +26,56 @@ import os
 
 
 class MyCallbacks(DefaultCallbacks):
+    def on_episode_start(
+        self,
+        *,
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        policies: Dict[str, Policy],
+        episode: EpisodeV2,
+        env_index: int,
+        **kwargs,
+    ):
+        # Make sure this episode has just been started (only initial obs
+        # logged so far).
+        # assert episode.length == 0, (
+        #     "ERROR: `on_episode_start()` callback should be called right "
+        #     f"after env reset!, episode.length was: {episode.length}"
+        # )
+        # Create lists to store angles in
+        episode.user_data["agent_1_rewards"] = []
+        episode.hist_data["agent_1_rewards"] = []
+
+    def on_episode_step(
+        self,
+        *,
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        policies: Dict[str, Policy],
+        episode: EpisodeV2,
+        env_index: int,
+        **kwargs,
+    ):
+        # Make sure this episode is ongoing.
+        assert episode.length > 0, (
+            "ERROR: `on_episode_step()` callback should not be called right "
+            "after env reset!"
+        )
+        agent_1_reward = episode._agent_reward_history['agent_1']
+        episode.user_data["agent_1_rewards"].append(agent_1_reward)
+
     def on_episode_end(
         self,
         *,
         worker: RolloutWorker,
         base_env: BaseEnv,
         policies: Dict[str, Policy],
-        episode: Episode,
+        episode: EpisodeV2,
         env_index: int,
         **kwargs
     ):
-        episode.custom_metrics["pole_angle"] = 1.0
-        print("AHHHHH")
-
+        # print(episode.user_data["agent_1_rewards"])
+        episode.custom_metrics["agent_1_rewards"] = np.mean(episode.user_data["agent_1_rewards"])
 
 def env_creator(args):
     env = PoliticsEnv()
@@ -46,8 +84,8 @@ def env_creator(args):
 
 
 if __name__ == "__main__":
-    # ray.init()
-    ray.init(local_mode=True)
+    ray.init()
+    # ray.init(local_mode=True)
     env_name = "politics_environment"
     env = env_creator({})
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
@@ -73,7 +111,7 @@ if __name__ == "__main__":
         )  # TODO: change to ERROR to match pistonball example
         .callbacks(MyCallbacks)
         # .rollouts(enable_connectors=False)
-        .reporting(keep_per_episode_custom_metrics=True)
+        # .reporting(keep_per_episode_custom_metrics=True)
     )
         
     
@@ -91,7 +129,7 @@ if __name__ == "__main__":
         "PPO",
         run_config=air.RunConfig(
             stop={
-                "training_iteration": 10,
+                "training_iteration": 1000,
             },
         ),
         param_space=config,
@@ -101,3 +139,5 @@ if __name__ == "__main__":
 
     custom_metrics = result.metrics["custom_metrics"]
     print(custom_metrics)
+
+    # import ray.rllib.env.wrappers.pettingzoo_env
