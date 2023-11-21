@@ -35,12 +35,12 @@ def raw_env(render_mode=None):
     To support the AEC API, the raw_env() function just uses the from_parallel
     function to convert from a ParallelEnv to an AEC env
     """
-    env = PoliticsEnv(render_mode=render_mode)
+    env = EconomicsEnv(render_mode=render_mode)
     env = parallel_to_aec(env)
     return env
 
 
-class PoliticsEnv(ParallelEnv):
+class EconomicsEnv(ParallelEnv):
     metadata = {
         "render_modes": ["human"],
         "name": "politics_environment_v0"
@@ -137,6 +137,6 @@ class PoliticsEnv(ParallelEnv):
 if __name__ == "__main__":
     from pettingzoo.test import parallel_api_test, render_test
 
-    env = PoliticsEnv()
+    env = EconomicsEnv()
     # parallel_api_test(env, num_cycles=1_000)
-    render_test(PoliticsEnv)
+    render_test(EconomicsEnv)

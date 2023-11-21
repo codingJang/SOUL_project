@@ -12,6 +12,7 @@ from ray.rllib.utils.numpy import one_hot
 
 N = 3
 delta = 0.01
+var = 1
 obs_space = Box(low=0, high=2, shape=(N * N, ))
 act_space = Box(low=np.full(2*N, -np.inf), high=np.full(2*N, np.inf), shape=(2*N,))
 
@@ -99,7 +100,6 @@ class PoliticsEnv(ParallelEnv):
             invite_choice = np.random.choice(self.num_agents, p=invite_prob)
             invite = one_hot(invite_choice, depth=self.num_agents)
             accept = np.random.uniform(size=self.num_agents) < accept_prob
-
             invite[i] = 0
             accept[i] = 0
             invites.append(invite)
@@ -111,14 +111,16 @@ class PoliticsEnv(ParallelEnv):
         # print(delta_affinity)
         self.affinity += delta_affinity
         observations = {agent:self.affinity.flatten() for agent in self.agents}
-        rewards = np.random.normal(size=self.num_agents, scale=0.1)
-        rewards[0] += 2
+        rewards = np.random.normal(size=self.num_agents, scale=var)
+        rewards[0] += 1
         rewards = self.affinity @ rewards
         rewards = dict(zip(self.agents, list(rewards)))
         # print(rewards)
         terminations = {agent:False for agent in self.agents}
         truncations = {agent:False for agent in self.agents}
         infos = {agent:{} for agent in self.agents}
+
+        self.t += 1
 
         if self.t >= 100:
             # print("Game does end")
@@ -127,8 +129,6 @@ class PoliticsEnv(ParallelEnv):
         
         if all(terminations.values()) or all(truncations.values()):
             self.agents = []
-
-        self.t += 1
             
         return observations, rewards, terminations, truncations, infos
     
