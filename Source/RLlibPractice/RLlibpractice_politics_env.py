@@ -76,6 +76,7 @@ class MyCallbacks(DefaultCallbacks):
     ):
         # print(episode.user_data["agent_1_rewards"])
         episode.custom_metrics["agent_1_rewards"] = np.mean(episode.user_data["agent_1_rewards"])
+        print(">>", episode.agent_rewards)
 
 def env_creator(args):
     env = PoliticsEnv()
@@ -114,7 +115,8 @@ if __name__ == "__main__":
         # .reporting(keep_per_episode_custom_metrics=True)
     )
         
-    
+    config['gamma'] = ray.tune.grid_search([0.8, 0.9])
+    config['lr'] = ray.tune.grid_search([1e-5, 5e-5, 1e-4])
     """
     tune.run(
         "SAC",
