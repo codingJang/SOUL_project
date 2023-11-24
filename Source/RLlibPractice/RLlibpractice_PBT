@@ -72,4 +72,29 @@ if __name__ == "__main__":
     )
     results = tuner.fit()
 
-    
+    import pprint
+
+    best_result = results.get_best_result()
+
+    print("Best performing trial's final set of hyperparameters:\n")
+    pprint.pprint(
+        {k: v for k, v in best_result.config.items() if k in hyperparam_mutations}
+    )
+
+    print("\nBest performing trial's final reported metrics:\n")
+
+    metrics_to_print = [
+        "episode_reward_mean",
+        "episode_reward_max",
+        "episode_reward_min",
+        "episode_len_mean",
+    ]
+    pprint.pprint({k: v for k, v in best_result.metrics.items() if k in metrics_to_print})
+
+    from ray.rllib.algorithms.algorithm import Algorithm
+
+    loaded_ppo = Algorithm.from_checkpoint(best_result.checkpoint)
+    loaded_policy = loaded_ppo.get_policy()
+
+    # See your trained policy in action
+    # loaded_policy.compute_single_action(...)
