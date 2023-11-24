@@ -11,8 +11,8 @@ from ray.rllib.utils.numpy import one_hot
 
 
 N = 3
-obs_space = Box(low=0, high=1, shape=(5 * N,))
-act_space = Box(low=np.full(1, -np.inf), high=np.full(1, np.inf), shape=(1,))
+obs_space = Box(low=-np.inf, high=np.inf, shape=(4 * N,))
+act_space = Box(low=-0.05, high=0.05, shape=(1,))
 
 
 def env(render_mode=None):
@@ -54,7 +54,12 @@ class EconomicsEnv(ParallelEnv):
         super().__init__()
         self.render_mode = render_mode
         self.rho = 0.8
-        self.stdev_eta = 0.03
+        self.STD_ETA = 0.03
+        self.std_gd = 0.1
+        self.std_ops = 0.1
+        self.std_ppl = 0.1
+        self.std_pl = 0.1
+        self.std_pe = 0.1
     
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -87,17 +92,17 @@ class EconomicsEnv(ParallelEnv):
         print("Inter-agent Variables:")
         print("Nominal Exchange Rate:\n", self.nom_exchange_rate)
         print("Real Exchange Rate:\n", self.real_exchange_rate)
-        print("Trade Coefficients:\n", self.trade_coeff)
+        print("Trade Coefficients:\n", self.TRADE_COEFF)
         print("\nEconomic Indicators:")
-        print("Exports:", self.ex)
+        print("Exports:", self.EX)
         print("Imports:", self.im)
-        print("Net Exports:", self.net_ex)
+        print("Net Exports:", self.NET_EX)
         print("Price Level:", self.price_lvl)
         print()
 
     def _render_array(self):
         # Concatenate all relevant arrays into a single numpy array for more technical analysis
-        state_arrays = [self.given_demand, self.one_plus_shock, self.one_plus_inf_rate, self.price_lvl, self.dem_after_shock, self.nom_exchange_rate, self.real_exchange_rate, self.trade_coeff, self.ex, self.im, self.net_ex, self.price_lvl]
+        state_arrays = [self.given_demand, self.one_plus_shock, self.one_plus_inf_rate, self.price_lvl, self.dem_after_shock, self.nom_exchange_rate, self.real_exchange_rate, self.TRADE_COEFF, self.EX, self.im, self.NET_EX, self.price_lvl]
         return np.concatenate([arr.flatten() for arr in state_arrays])
     
     def close(self):
@@ -109,68 +114,64 @@ class EconomicsEnv(ParallelEnv):
         # all small letter variables denote logarithmic variables
         # all capital letter variables are non-logarithmetic variables
         # ex: self.one_plus_inf_rate = ln(1 + (INFLATION_RATE))
-        self.given_demand = np.random.randn(self.num_agents)
-        self.one_plus_shock = np.zeros(self.num_agents)
+        self.given_demand = self.std_gd * np.random.randn(self.num_agents)
+        self.one_plus_shock = self.std_ops * np.random.randn(self.num_agents)
+        self.dem_after_shock = self.given_demand + self.one_plus_shock
         # self.one_plus_inf_rate = np.random.randn(self.num_agents)
-        self.price_lvl = np.random.randn(self.num_agents)
-        self.dem_after_shock = self.one_plus_shock + self.given_demand
-        self.states = np.vstack((self.given_demand, self.one_plus_shock, self.one_plus_inf_rate, self.price_lvl, self.dem_after_shock))
-        observations = {agent:self.states.flatten() for agent in self.agents}
+        self.prev_price_lvl = self.std_ppl * np.random.randn(self.num_agents)
+        self.price_lvl = self.std_pl * np.random.randn(self.num_agents)
+        self.PREV_EX = np.exp(self.std_pe * np.random.randn(self.num_agents))
+        self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_EX))
+        observations = {agent:self.observation.flatten().astype(np.float32) for agent in self.agents}
         infos = {agent:{} for agent in self.agents}
         return observations, infos
 
     def step(self, actions):
-        # print(f"actions: ", actions)
         actions = [action for (agent, action) in actions.items()]
-        # print(f"-------actions------: {actions}")
         self.one_plus_int_rate = np.array(actions).squeeze()
-        # print(f"-------self.one_plus_int_rate------: {self.one_plus_int_rate}")
-        self.total_demand = self.dem_after_shock - self.one_plus_int_rate
-        print(f"-------self.total_demand------: {self.total_demand}")
-        price_diff = self.price_lvl.reshape(-1, 1) - self.price_lvl.reshape(1, -1)
-        int_rate_diff = self.one_plus_int_rate.reshape(1, -1) - self.one_plus_int_rate.reshape(-1, 1)
-        # print(f"price_diff: {price_diff.shape}")
-        # print(f"int_rate_diff: {int_rate_diff.shape}")
-        self.nom_exchange_rate = price_diff + int_rate_diff
-        # nom_exchange_rate = np.zeros(shape=(self.num_agents, self.num_agents))
-        # for i in range(self.num_agents):
-        #     for j in range(self.num_agents):
-        #         nom_exchange_rate[i, j] = self.price_lev[i]-self.price_lev[j]+one_plus_int_rate[j]-one_plus_int_rate[i]
-        self.real_exchange_rate = int_rate_diff
-        # real_exchange_rate = np.zeros(shape=(self.num_agents, self.num_agents))
-        # for i in range(self.num_agents):
-        #     for j in range(self.num_agents):
-        #         nom_exchange_rate[i, j] = self.price_lev[i]-self.price_lev[j]+one_plus_int_rate[j]-one_plus_int_rate[i]
-        num = np.exp(self.real_exchange_rate)
-        den = np.sum(num, axis=0, keepdims=True)
-        self.trade_coeff = num / den
-        # trade_coeff = np.zeros(shape=(self.num_agents, self.num_agents))
-        # for i in range(self.num_agents):
-        #     num = np.exp(real_exchange_rate[:,i])
-        #     den = np.sum(num)
-        #     trade_coeff[i, :] = num / den
-        # spec_demand = trade_coeff @ total_demand
-        temp = np.copy(self.trade_coeff)
-        np.fill_diagonal(temp, 0)
-        self.ex = temp @ np.exp(self.total_demand)
-        self.im = np.sum(temp, axis=1) * np.exp(self.total_demand)
-        self.net_ex = self.ex - self.im
-        prev_price_lvl = self.price_lvl
-
-        # self.render(mode="human")
+        # print(f"self.one_plus_int_rate={self.one_plus_int_rate}")
         self.t += 1
 
-        self.price_lvl = np.log(np.exp(self.price_lvl) * (1 + self.net_ex/np.exp(self.total_demand)) * np.exp(-self.one_plus_int_rate))
-        self.one_plus_inf_rate = self.price_lvl - prev_price_lvl
-        eta = self.stdev_eta * np.random.randn(self.num_agents)
-        self.one_plus_shock = np.log(np.maximum(1e-10, 1+(self.rho * (np.exp(self.one_plus_shock)-1) + eta)))
+        self.total_demand = self.dem_after_shock - self.one_plus_int_rate
+        # print(f"-------self.total_demand------: {self.total_demand}")
+        price_diff = self.price_lvl.reshape(-1, 1) - self.price_lvl.reshape(1, -1)
+        int_rate_diff = self.one_plus_int_rate.reshape(-1, 1) - self.one_plus_int_rate.reshape(1, -1)
+        self.nom_exchange_rate = price_diff - int_rate_diff
+        self.real_exchange_rate = - int_rate_diff
+
+        NUM = np.exp(self.real_exchange_rate).T
+        DEN = np.sum(NUM, axis=0, keepdims=True)
+        self.TRADE_COEFF = NUM / DEN
+        TEMP = np.copy(self.TRADE_COEFF)
+        np.fill_diagonal(TEMP, 0)
+        self.EX = TEMP.T @ np.exp(self.total_demand)
+        self.PREV_EX = self.EX
+
+        NUM_STAR = np.exp(self.real_exchange_rate)
+        DEN_STAR = np.sum(NUM_STAR, axis=1, keepdims=True)
+        self.TRADE_COEFF_STAR = NUM_STAR / DEN_STAR
+        TEMP_STAR = np.copy(self.TRADE_COEFF_STAR)
+        np.fill_diagonal(TEMP_STAR, 0)
+        self.EX_STAR = TEMP_STAR @ np.exp(self.total_demand)
+
+        # assert (self.EX == self.EX_STAR).all(), f"self.EX=={self.EX} self.EX_STAR={self.EX_STAR}"
+
+        self.IM = np.sum(TEMP, axis=1) * np.exp(self.total_demand)
+        self.NET_EX = self.EX - self.IM
+        self.prev_price_lvl = self.price_lvl
+        # print(f"1 + self.NET_EX/np.exp(self.total_demand): {1 + self.NET_EX/np.exp(self.total_demand)}")
+        self.price_lvl = np.log(np.exp(self.price_lvl)) + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
+        self.price_lvl = (self.price_lvl - np.mean(self.price_lvl)) / np.std(self.price_lvl)
+        self.one_plus_inf_rate = self.price_lvl - self.prev_price_lvl
         self.given_demand = self.given_demand - self.one_plus_inf_rate
+        self.ETA = self.STD_ETA * np.random.randn(self.num_agents)
+        self.one_plus_shock = np.log(np.maximum(1e-10, 1+(self.rho * (np.exp(self.one_plus_shock)-1) + self.ETA)))
         self.dem_after_shock = self.given_demand + self.one_plus_shock
         
-        self.states = np.vstack((self.given_demand, self.one_plus_shock, self.one_plus_inf_rate, self.price_lvl, self.dem_after_shock))
-        observations = {agent:self.states.flatten() for i, agent in enumerate(self.agents)}
+        self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_EX))
+        observations = {agent:self.observation.flatten().astype(np.float32) for agent in self.agents}
 
-        rewards = np.exp(self.total_demand) + self.net_ex
+        rewards = np.exp(self.total_demand) + self.NET_EX
         rewards = dict(zip(self.agents, list(rewards)))
         # print(rewards)
         terminations = {agent:False for agent in self.agents}
@@ -188,13 +189,12 @@ class EconomicsEnv(ParallelEnv):
         # a = np.array([1,2,3]) / np.array([0, 1, 2])
 
         return observations, rewards, terminations, truncations, infos
-    
 
 
 if __name__ == "__main__":
     from pettingzoo.test import parallel_api_test, render_test
 
-    # np.seterr(divide='raise')
+    np.seterr(all='raise', divide='raise', over='raise', under='raise', invalid='raise')
     # np.seterr
     env = EconomicsEnv()
     parallel_api_test(env, num_cycles=1_000)

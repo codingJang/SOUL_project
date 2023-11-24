@@ -18,7 +18,7 @@ from ray.rllib.policy import Policy
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.utils.annotations import override
 
-from politics_env import *
+from economics_env import *
 
 from typing import Dict, Tuple
 import os
@@ -78,7 +78,7 @@ class MyCallbacks(DefaultCallbacks):
         episode.custom_metrics["agent_1_rewards"] = np.mean(episode.user_data["agent_1_rewards"])
 
 def env_creator(args):
-    env = PoliticsEnv()
+    env = EconomicsEnv()
     # env = ss.frame_stack_v1(env, 3)
     return env
 
@@ -86,12 +86,13 @@ def env_creator(args):
 if __name__ == "__main__":
     ray.init()
     # ray.init(local_mode=True)
-    env_name = "politics_environment"
+    env_name = "economics_environment"
     env = env_creator({})
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
 
     config = (
         PPOConfig()
+        .training(lr=0.0001, gamma=0.9, clip_param=0.2)
         .environment(env=env_name, clip_actions=True)
         .rollouts(num_rollout_workers=7, rollout_fragment_length='auto')
         # .training(gamma=0.9, lr=0.01)
