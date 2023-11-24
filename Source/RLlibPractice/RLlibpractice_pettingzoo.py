@@ -1,5 +1,6 @@
 import argparse
 
+import ray
 from typing import Dict, Tuple
 from ray import air, tune
 from ray.tune.registry import register_env
@@ -15,7 +16,6 @@ from ray.rllib.policy import Policy
 # Based on code from github.com/parametersharingmadrl/parametersharingmadrl
 
 class MyCallbacks(DefaultCallbacks):
-
     def on_episode_end(
         self,
         *,
@@ -28,6 +28,7 @@ class MyCallbacks(DefaultCallbacks):
     ):
         episode.custom_metrics["pole_angle"] = 1.0
         print("AHHHHH")
+        raise AssertionError("Tracing back AHHHHH")
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -44,6 +45,8 @@ parser.add_argument(
 )
 
 if __name__ == "__main__":
+    context = ray.init()
+    print(context.dashboard_url)
     args = parser.parse_args()
 
     def env_creator(args):

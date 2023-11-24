@@ -11,8 +11,9 @@ from ray.rllib.utils.numpy import one_hot
 
 
 N = 3
-delta = 0.00001
-obs_space = Box(low=0, high=2, shape=(N * N, ))
+delta = 0.01
+var = 1
+obs_space = Box(low=0, high=1, shape=(N * N, ))
 act_space = Box(low=np.full(2*N, -np.inf), high=np.full(2*N, np.inf), shape=(2*N,))
 
 
@@ -99,7 +100,6 @@ class PoliticsEnv(ParallelEnv):
             invite_choice = np.random.choice(self.num_agents, p=invite_prob)
             invite = one_hot(invite_choice, depth=self.num_agents)
             accept = np.random.uniform(size=self.num_agents) < accept_prob
-
             invite[i] = 0
             accept[i] = 0
             invites.append(invite)
@@ -107,25 +107,27 @@ class PoliticsEnv(ParallelEnv):
         invites = np.vstack(invites)
         accepts = np.vstack(accepts)
         delta_affinity = self.delta * 0.5 * (accepts.T * invites + invites.T * accepts)
-        print(self.affinity)
-        print(delta_affinity)
+        # print(self.affinity)
+        # print(delta_affinity)
         self.affinity += delta_affinity
         observations = {agent:self.affinity.flatten() for agent in self.agents}
-        rewards = np.random.normal(size=self.num_agents)
-        rewards -= 1
-        rewards[0] += 2
+        rewards = np.random.normal(size=self.num_agents, scale=var)
+        rewards[0] += 1
         rewards = self.affinity @ rewards
         rewards = dict(zip(self.agents, list(rewards)))
-        print(rewards)
+        # print(rewards)
         terminations = {agent:False for agent in self.agents}
         truncations = {agent:False for agent in self.agents}
         infos = {agent:{} for agent in self.agents}
 
+        self.t += 1
+
         if self.t >= 100:
-            truncations = {self.agents[i]:True for i in range(self.num_agents)}
+            # print("Game does end")
+            truncations = {agent:True for agent in self.agents}
             terminations = {agent:True for agent in self.agents}
         
-        if any(terminations.values()) or all(truncations.values()):
+        if all(terminations.values()) or all(truncations.values()):
             self.agents = []
             
         return observations, rewards, terminations, truncations, infos

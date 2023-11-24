@@ -19,3 +19,5 @@ Below are the descriptions for important directories:
 **.Source/PreprocessingInternationalRelationsData:** In our simulation, agents can adjust the amount of rewards to share by adjusting their affinity. However, the initial affinity should be able to reflect the current diplomacies. We used Defense Cooperation Agreement Dataset by Brandon J. Kinne, and a web-parsed version of International Organization Participation data from cia.gov to create realistic affinity graphs between different countries.
 
 **.Source/MultiAgentDeepQLearning:** We use Deep Q-Network (DQN) architectures and their variants to model agents. Reasons for choosing DQN includes ease of analysis, decent performance and popularity. Most RL setups assume stationarity of the transition dynamics, meaning they assume the laws underlying the environment do not change. However, introducing multiple agents requires that one agent can adapt to other agent's strategic change, which introduces further challenge.
+
+** Should mention how to install packages etc. **
