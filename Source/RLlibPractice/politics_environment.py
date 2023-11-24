@@ -13,7 +13,7 @@ from ray.rllib.utils.numpy import one_hot
 N = 3
 delta = 0.01
 var = 1
-obs_space = Box(low=0, high=2, shape=(N * N, ))
+obs_space = Box(low=0, high=1, shape=(N * N, ))
 act_space = Box(low=np.full(2*N, -np.inf), high=np.full(2*N, np.inf), shape=(2*N,))
 
 
