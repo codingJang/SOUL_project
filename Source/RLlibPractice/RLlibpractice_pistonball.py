@@ -66,7 +66,7 @@ def env_creator(args):
 
 
 if __name__ == "__main__":
-    ray.init()
+    ray.init(num_gpus=4)
 
     env_name = "pistonball_v6"
 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         )
         .debugging(log_level="ERROR")
         .framework(framework="torch")
-        .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
+        .resources(num_gpus=1)
     )
 
     tune.run(

@@ -8,7 +8,7 @@ import ray.rllib.algorithms.ppo.ppo_torch_policy
 import ray
 from ray import air, tune
 from ray.rllib.algorithms.sac import SACConfig
-from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.algorithms.appo import APPOConfig
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.env.wrappers.pettingzoo_env import ParallelPettingZooEnv
 from ray.tune.registry import register_env
@@ -85,20 +85,19 @@ def env_creator(args):
 
 
 if __name__ == "__main__":
-    ray.init()
+    ray.init(num_gpus=4)
     # ray.init(local_mode=True)
     env_name = "economics_environment"
     env = env_creator({})
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
-
     config = (
-        PPOConfig()
-        # .training(lr=0.0001, gamma=0.9, clip_param=0.2)
+        APPOConfig()
+        .training(lr=0.0001, gamma=0.9, clip_param=0.2)
         .environment(env=env_name, clip_actions=True)
-        .rollouts(num_rollout_workers=7)
-        # .training(gamma=0.9, lr=0.01)
-        .framework(framework="torch")
-        .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
+        .rollouts(num_rollout_workers=31, recreate_failed_workers=True, restart_failed_sub_environments=True)
+        # .framework(framework="torch")
+        .resources(num_gpus=4, num_learner_workers=31, num_gpus_per_learner_worker=0.125)
+        # .resources(num_learner_workers=16)
         .multi_agent(
             # policies={
             #     "agent_0": (None, obs_space, act_space, {}),
@@ -127,8 +126,9 @@ if __name__ == "__main__":
         config=config.to_dict(),
     )
     """
+
     tuner = tune.Tuner(
-        "PPO",
+        "APPO",
         run_config=air.RunConfig(
             stop={
                 "training_iteration": 1000,
