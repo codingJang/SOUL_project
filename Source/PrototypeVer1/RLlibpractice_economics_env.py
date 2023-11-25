@@ -84,20 +84,19 @@ def env_creator(args):
 
 
 if __name__ == "__main__":
-    ray.init()
+    ray.init(num_gpus=4)
     # ray.init(local_mode=True)
     env_name = "economics_environment"
     env = env_creator({})
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
-
     config = (
         PPOConfig()
         .training(lr=0.0001, gamma=0.9, clip_param=0.2)
         .environment(env=env_name, clip_actions=True)
-        .rollouts(num_rollout_workers=7, rollout_fragment_length='auto')
-        # .training(gamma=0.9, lr=0.01)
-        .framework(framework="torch")
-        .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
+        .rollouts(num_rollout_workers=15, recreate_failed_workers=True, restart_failed_sub_environments=True)
+        # .framework(framework="torch")
+        # .resources(num_gpus=3, num_learner_workers=3, num_gpus_per_learner_worker=1, num_cpus_for_local_worker=9)
+        .resources(num_learner_workers=16)
         .multi_agent(
             # policies={
             #     "agent_0": (None, obs_space, act_space, {}),
@@ -126,6 +125,7 @@ if __name__ == "__main__":
         config=config.to_dict(),
     )
     """
+
     tuner = tune.Tuner(
         "PPO",
         run_config=air.RunConfig(
