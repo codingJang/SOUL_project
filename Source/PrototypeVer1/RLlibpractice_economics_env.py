@@ -3,6 +3,7 @@
 Author: Rohan (https://github.com/Rohan138)
 """
 
+import ray.rllib.algorithms.ppo.ppo_torch_policy
 
 import ray
 from ray import air, tune
@@ -92,9 +93,9 @@ if __name__ == "__main__":
 
     config = (
         PPOConfig()
-        .training(lr=0.0001, gamma=0.9, clip_param=0.2)
+        # .training(lr=0.0001, gamma=0.9, clip_param=0.2)
         .environment(env=env_name, clip_actions=True)
-        .rollouts(num_rollout_workers=7, rollout_fragment_length='auto')
+        .rollouts(num_rollout_workers=7)
         # .training(gamma=0.9, lr=0.01)
         .framework(framework="torch")
         .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
