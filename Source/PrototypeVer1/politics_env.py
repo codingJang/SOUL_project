@@ -138,5 +138,5 @@ if __name__ == "__main__":
     from pettingzoo.test import parallel_api_test, render_test
 
     env = PoliticsEnv()
-    # parallel_api_test(env, num_cycles=1_000)
-    render_test(PoliticsEnv)
+    parallel_api_test(env, num_cycles=1_000)
+    # render_test(PoliticsEnv)

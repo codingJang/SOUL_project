@@ -8,11 +8,12 @@ from gymnasium.spaces import Box, Dict, MultiBinary, Discrete
 from pettingzoo import ParallelEnv
 from pettingzoo.utils import parallel_to_aec, wrappers
 from ray.rllib.utils.numpy import one_hot
+import supersuit as ss
 
 
 N = 3
 obs_space = Box(low=-np.inf, high=np.inf, shape=(4 * N,))
-act_space = Box(low=-0.05, high=0.05, shape=(1,))
+act_space = Box(low=-np.inf, high=np.inf, shape=(1,))
 
 
 def env(render_mode=None):
@@ -36,6 +37,7 @@ def raw_env(render_mode=None):
     """
     env = EconomicsEnv(render_mode=render_mode)
     env = parallel_to_aec(env)
+    env = ss.clip_actions_v0(env)
     return env
 
 
@@ -59,7 +61,8 @@ class EconomicsEnv(ParallelEnv):
         self.std_ops = 0.1
         self.std_ppl = 0.1
         self.std_pl = 0.1
-        self.std_pe = 0.1
+        self.std_pne = 0.1
+        self.std_ne = 0.1
     
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -83,26 +86,38 @@ class EconomicsEnv(ParallelEnv):
     def _render_human_readable(self):
         print("Current timestep:", self.t)
         print("Agents:", self.agents)
-        print("\nState Variables:")
-        # given demand: nan, one_plus_inf_rate: nan, price_lvl: nan, dem_after_shock: nan
-        state_variables = ['given_demand', 'one_plus_shock', 'one_plus_inf_rate', 'price_lvl', 'dem_after_shock']
-        for var in state_variables:
-            print(f"{var}: {getattr(self, var)}")
-        print()
-        print("Inter-agent Variables:")
-        print("Nominal Exchange Rate:\n", self.nom_exchange_rate)
-        print("Real Exchange Rate:\n", self.real_exchange_rate)
+        print("INT_RATE:", np.exp(self.one_plus_int_rate)-1)
+        print("GDP:", self.GDP)
+
+        print("\nObservables:")
+        observable_vars = ['dem_after_shock', 'prev_price_lvl', 'price_lvl']
+        for var in observable_vars:
+            print(f"{var.upper()}: {np.exp(getattr(self, var))}")
+        print("PREV_NET_EX:", self.PREV_NET_EX)
+
+        print("\nHidden Variables:")
+        print("ETA:", self.ETA)
+        hidden_vars = ['one_plus_shock', 'given_demand', 'dem_after_shock', 'total_demand', 'one_plus_inf_rate']
+        for var in hidden_vars:
+            print(f"{var.upper()}: {np.exp(getattr(self, var))}")
+        
+        print("\nInter-agent Variables:")
+        print("Nominal Exchange Rate:\n", np.exp(self.nom_exchange_rate))
+        print("Real Exchange Rate:\n", np.exp(self.real_exchange_rate))
         print("Trade Coefficients:\n", self.TRADE_COEFF)
+
         print("\nEconomic Indicators:")
         print("Exports:", self.EX)
-        print("Imports:", self.im)
+        print("Imports:", self.IM)
         print("Net Exports:", self.NET_EX)
-        print("Price Level:", self.price_lvl)
+        print()
         print()
 
     def _render_array(self):
         # Concatenate all relevant arrays into a single numpy array for more technical analysis
-        state_arrays = [self.given_demand, self.one_plus_shock, self.one_plus_inf_rate, self.price_lvl, self.dem_after_shock, self.nom_exchange_rate, self.real_exchange_rate, self.TRADE_COEFF, self.EX, self.im, self.NET_EX, self.price_lvl]
+        state_arrays = [self.given_demand, self.one_plus_shock, self.one_plus_inf_rate, self.price_lvl, 
+                        self.dem_after_shock, self.nom_exchange_rate, self.real_exchange_rate, 
+                        self.TRADE_COEFF, self.EX, self.IM, self.NET_EX, self.price_lvl]
         return np.concatenate([arr.flatten() for arr in state_arrays])
     
     def close(self):
@@ -117,18 +132,18 @@ class EconomicsEnv(ParallelEnv):
         self.given_demand = self.std_gd * np.random.randn(self.num_agents)
         self.one_plus_shock = self.std_ops * np.random.randn(self.num_agents)
         self.dem_after_shock = self.given_demand + self.one_plus_shock
-        # self.one_plus_inf_rate = np.random.randn(self.num_agents)
         self.prev_price_lvl = self.std_ppl * np.random.randn(self.num_agents)
         self.price_lvl = self.std_pl * np.random.randn(self.num_agents)
-        self.PREV_EX = np.exp(self.std_pe * np.random.randn(self.num_agents))
-        self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_EX))
+        self.PREV_NET_EX = np.exp(self.std_pne * np.random.randn(self.num_agents))
+        self.NET_EX = np.exp(self.std_ne * np.random.randn(self.num_agents))
+        self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX))
         observations = {agent:self.observation.flatten().astype(np.float32) for agent in self.agents}
         infos = {agent:{} for agent in self.agents}
         return observations, infos
 
     def step(self, actions):
         actions = [action for (agent, action) in actions.items()]
-        self.one_plus_int_rate = np.array(actions).squeeze()
+        self.one_plus_int_rate = 0.20 / (1 + np.exp(-np.array(actions).squeeze()))
         # print(f"self.one_plus_int_rate={self.one_plus_int_rate}")
         self.t += 1
 
@@ -145,7 +160,6 @@ class EconomicsEnv(ParallelEnv):
         TEMP = np.copy(self.TRADE_COEFF)
         np.fill_diagonal(TEMP, 0)
         self.EX = TEMP.T @ np.exp(self.total_demand)
-        self.PREV_EX = self.EX
 
         NUM_STAR = np.exp(self.real_exchange_rate)
         DEN_STAR = np.sum(NUM_STAR, axis=1, keepdims=True)
@@ -154,9 +168,10 @@ class EconomicsEnv(ParallelEnv):
         np.fill_diagonal(TEMP_STAR, 0)
         self.EX_STAR = TEMP_STAR @ np.exp(self.total_demand)
 
-        # assert (self.EX == self.EX_STAR).all(), f"self.EX=={self.EX} self.EX_STAR={self.EX_STAR}"
+        assert (self.EX == self.EX_STAR).all(), f"self.EX=={self.EX} self.EX_STAR={self.EX_STAR}"
 
         self.IM = np.sum(TEMP, axis=1) * np.exp(self.total_demand)
+        self.PREV_NET_EX = self.NET_EX
         self.NET_EX = self.EX - self.IM
         self.prev_price_lvl = self.price_lvl
         # print(f"1 + self.NET_EX/np.exp(self.total_demand): {1 + self.NET_EX/np.exp(self.total_demand)}")
@@ -168,11 +183,11 @@ class EconomicsEnv(ParallelEnv):
         self.one_plus_shock = np.log(np.maximum(1e-10, 1+(self.rho * (np.exp(self.one_plus_shock)-1) + self.ETA)))
         self.dem_after_shock = self.given_demand + self.one_plus_shock
         
-        self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_EX))
+        self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX))
         observations = {agent:self.observation.flatten().astype(np.float32) for agent in self.agents}
 
-        rewards = np.exp(self.total_demand) + self.NET_EX
-        rewards = dict(zip(self.agents, list(rewards)))
+        self.GDP = np.exp(self.total_demand) + self.NET_EX
+        rewards = dict(zip(self.agents, list(self.GDP)))
         # print(rewards)
         terminations = {agent:False for agent in self.agents}
         truncations = {agent:False for agent in self.agents}
@@ -187,6 +202,7 @@ class EconomicsEnv(ParallelEnv):
             self.agents = []
         
         # a = np.array([1,2,3]) / np.array([0, 1, 2])
+        # self.render(mode='human')
 
         return observations, rewards, terminations, truncations, infos
 

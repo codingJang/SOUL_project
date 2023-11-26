@@ -26,7 +26,7 @@ import os
 
 
 
-class MyCallbacks(DefaultCallbacks):
+class EconomicsEnvCallbacks(DefaultCallbacks):
     def on_episode_start(
         self,
         *,
@@ -44,8 +44,9 @@ class MyCallbacks(DefaultCallbacks):
         #     f"after env reset!, episode.length was: {episode.length}"
         # )
         # Create lists to store angles in
-        episode.user_data["agent_1_rewards"] = []
-        episode.hist_data["agent_1_rewards"] = []
+        for i in range(N):
+            episode.custom_metrics[f"agent_{i}_GDPs"] = []
+            episode.custom_metrics[f"agent_{i}_interest_rates"] = []
 
     def on_episode_step(
         self,
@@ -62,8 +63,14 @@ class MyCallbacks(DefaultCallbacks):
             "ERROR: `on_episode_step()` callback should not be called right "
             "after env reset!"
         )
-        agent_1_reward = episode._agent_reward_history['agent_1']
-        episode.user_data["agent_1_rewards"].append(agent_1_reward)
+        # for agent_id, collector in episode._agent_collectors.items():
+        #     print(collector.buffers['actions'])
+
+        # for i in range(N):
+        #     agent_GDP = episode._agent_reward_history[f'agent_{i}']
+        #     episode._agent_collectors.items()
+        #     # agent_interest_rate = episode._agent_action_history[f'agent_{i}']
+        #     episode.user_data[f"agent_{i}_GDPs"].append(agent_GDP)
 
     def on_episode_end(
         self,
@@ -76,7 +83,12 @@ class MyCallbacks(DefaultCallbacks):
         **kwargs
     ):
         # print(episode.user_data["agent_1_rewards"])
-        episode.custom_metrics["agent_1_rewards"] = np.mean(episode.user_data["agent_1_rewards"])
+        # episode.custom_metrics["agent_1_rewards"] = np.sum(episode.user_data["agent_1_rewards"])
+
+        for agent_id, collector in episode._agent_collectors.items():
+            episode.custom_metrics[agent_id+"_GDPs"].append(np.sum(collector.buffers['rewards']))
+            assert np.all(0.20 / (1 + np.exp(-np.array(collector.buffers['actions']))) >= 0), f"{0.20 / (1 + np.exp(-np.array(collector.buffers['actions'])))}"
+            episode.custom_metrics[agent_id+"_interest_rates"].append(np.sum(0.20 / (1 + np.exp(-np.array(collector.buffers['actions'])))))
 
 def env_creator(args):
     env = EconomicsEnv()
@@ -85,8 +97,8 @@ def env_creator(args):
 
 
 if __name__ == "__main__":
-    ray.init(num_gpus=4)
-    # ray.init(local_mode=True)
+    # ray.init(num_gpus=0)
+    ray.init(local_mode=True)
     env_name = "economics_environment"
     env = env_creator({})
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
@@ -94,9 +106,9 @@ if __name__ == "__main__":
         APPOConfig()
         .training(lr=0.0001, gamma=0.9, clip_param=0.2)
         .environment(env=env_name, clip_actions=True)
-        .rollouts(num_rollout_workers=31, recreate_failed_workers=True, restart_failed_sub_environments=True)
+        .rollouts(num_rollout_workers=7, recreate_failed_workers=True, restart_failed_sub_environments=True)
         # .framework(framework="torch")
-        .resources(num_gpus=4, num_learner_workers=31, num_gpus_per_learner_worker=0.125)
+        .resources(num_learner_workers=7)
         # .resources(num_learner_workers=16)
         .multi_agent(
             # policies={
@@ -110,7 +122,7 @@ if __name__ == "__main__":
         .debugging(
             log_level="DEBUG"
         )  # TODO: change to ERROR to match pistonball example
-        .callbacks(MyCallbacks)
+        .callbacks(EconomicsEnvCallbacks)
         # .rollouts(enable_connectors=False)
         # .reporting(keep_per_episode_custom_metrics=True)
     )
