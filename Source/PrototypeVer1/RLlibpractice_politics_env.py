@@ -93,10 +93,10 @@ if __name__ == "__main__":
     config = (
         PPOConfig()
         .environment(env=env_name, clip_actions=True)
-        .rollouts(num_rollout_workers=7, rollout_fragment_length='auto')
+        .rollouts(num_rollout_workers=40, rollout_fragment_length='auto')
         # .training(gamma=0.9, lr=0.01)
         .framework(framework="torch")
-        .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
+        .resources(num_learner_workers=40)
         .multi_agent(
             # policies={
             #     "agent_0": (None, obs_space, act_space, {}),

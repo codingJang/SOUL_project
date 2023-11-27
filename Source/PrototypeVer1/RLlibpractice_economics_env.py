@@ -6,7 +6,7 @@ Author: Rohan (https://github.com/Rohan138)
 import ray.rllib.algorithms.ppo.ppo_torch_policy
 
 import ray
-from ray import air, tune
+from ray import air, train, tune
 from ray.rllib.algorithms.sac import SACConfig
 from ray.rllib.algorithms.appo import APPOConfig
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
@@ -84,11 +84,11 @@ class EconomicsEnvCallbacks(DefaultCallbacks):
     ):
         # print(episode.user_data["agent_1_rewards"])
         # episode.custom_metrics["agent_1_rewards"] = np.sum(episode.user_data["agent_1_rewards"])
-
+        # raise TypeError(f"What's wrong? type = {episode.__dict__.keys()}")
         for agent_id, collector in episode._agent_collectors.items():
             episode.custom_metrics[agent_id+"_GDPs"].append(np.sum(collector.buffers['rewards']))
             assert np.all(0.20 / (1 + np.exp(-np.array(collector.buffers['actions']))) >= 0), f"{0.20 / (1 + np.exp(-np.array(collector.buffers['actions'])))}"
-            episode.custom_metrics[agent_id+"_interest_rates"].append(np.sum(0.20 / (1 + np.exp(-np.array(collector.buffers['actions'])))))
+            episode.custom_metrics[agent_id+"_interest_rates"].append(np.mean(0.20 / (1 + np.exp(-np.array(collector.buffers['actions'])))))
 
 def env_creator(args):
     env = EconomicsEnv()
@@ -97,18 +97,18 @@ def env_creator(args):
 
 
 if __name__ == "__main__":
-    # ray.init(num_gpus=0)
-    ray.init(local_mode=True)
+    ray.init(num_gpus=0)
+    # ray.init(local_mode=True)
     env_name = "economics_environment"
     env = env_creator({})
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
     config = (
         APPOConfig()
-        .training(lr=0.0001, gamma=0.9, clip_param=0.2)
-        .environment(env=env_name, clip_actions=True)
-        .rollouts(num_rollout_workers=7, recreate_failed_workers=True, restart_failed_sub_environments=True)
+        .training(lr=tune.loguniform(1e-6, 1e-2), gamma=tune.uniform(0.9, 0.9999), clip_param=0.2, train_batch_size=512)
+        .environment(env=env_name, clip_actions=True)                                                                                                                                               
+        .rollouts(num_rollout_workers=84, recreate_failed_workers=True, restart_failed_sub_environments=True)
         # .framework(framework="torch")
-        .resources(num_learner_workers=7)
+        .resources(num_learner_workers=84, num_cpus_for_local_worker=4)
         # .resources(num_learner_workers=16)
         .multi_agent(
             # policies={
@@ -142,8 +142,9 @@ if __name__ == "__main__":
     tuner = tune.Tuner(
         "APPO",
         run_config=air.RunConfig(
+            checkpoint_config=train.CheckpointConfig(checkpoint_frequency=10),
             stop={
-                "training_iteration": 1000,
+                "training_iteration": 300,
             },
         ),
         param_space=config,

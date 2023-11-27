@@ -151,8 +151,8 @@ class EconomicsEnv(ParallelEnv):
         # print(f"-------self.total_demand------: {self.total_demand}")
         price_diff = self.price_lvl.reshape(-1, 1) - self.price_lvl.reshape(1, -1)
         int_rate_diff = self.one_plus_int_rate.reshape(-1, 1) - self.one_plus_int_rate.reshape(1, -1)
-        self.nom_exchange_rate = price_diff - int_rate_diff
-        self.real_exchange_rate = - int_rate_diff
+        self.nom_exchange_rate = price_diff - 7 * int_rate_diff
+        self.real_exchange_rate = - 7 * int_rate_diff
 
         NUM = np.exp(self.real_exchange_rate).T
         DEN = np.sum(NUM, axis=0, keepdims=True)
