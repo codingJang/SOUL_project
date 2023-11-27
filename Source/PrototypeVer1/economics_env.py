@@ -212,6 +212,6 @@ if __name__ == "__main__":
 
     np.seterr(all='raise', divide='raise', over='raise', under='raise', invalid='raise')
     # np.seterr
-    env = EconomicsEnv()
-    parallel_api_test(env, num_cycles=1_000)
+    my_env = EconomicsEnv(render_mode='human')
+    parallel_api_test(my_env, num_cycles=1_000)
     # render_test(EconomicsEnv)

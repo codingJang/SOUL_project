@@ -104,12 +104,12 @@ if __name__ == "__main__":
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
     config = (
         APPOConfig()
-        .training(lr=tune.loguniform(1e-6, 1e-2), gamma=tune.uniform(0.9, 0.9999), clip_param=0.2, train_batch_size=512)
+        .training(lr=tune.loguniform(1e-5, 1e-3), gamma=tune.uniform(0.9, 0.9999), clip_param=0.2, train_batch_size=512)
         .environment(env=env_name, clip_actions=True)                                                                                                                                               
         .rollouts(num_rollout_workers=84, recreate_failed_workers=True, restart_failed_sub_environments=True)
-        # .framework(framework="torch")
+        .framework(framework="torch")
         .resources(num_learner_workers=84, num_cpus_for_local_worker=4)
-        # .resources(num_learner_workers=16)
+        .resources(num_learner_workers=16)
         .multi_agent(
             # policies={
             #     "agent_0": (None, obs_space, act_space, {}),
@@ -138,16 +138,21 @@ if __name__ == "__main__":
         config=config.to_dict(),
     )
     """
-
+    def stop_fn(trial_id: str, result: dict) -> bool:
+        # raise NotImplementedError(f"trial_id: {trial_id}, result.keys(): {result.keys()}")
+        bool_value_1 = result["timesteps_total"] >= 10000000
+        bool_value_2 = any([result["custom_metrics"][f"agent_{i}_interest_rates_max"] <= 0.001 for i in range(N)])
+        bool_value_3 = any([result['info']['learner'][f'agent_{i}']['learner_stats']['entropy'] >= 2.0 for i in range(N)])
+        return bool_value_1 or bool_value_2 or bool_value_3
+    
     tuner = tune.Tuner(
         "APPO",
         run_config=air.RunConfig(
             checkpoint_config=train.CheckpointConfig(checkpoint_frequency=10),
-            stop={
-                "training_iteration": 300,
-            },
+            stop=stop_fn
         ),
-        param_space=config,
+        tune_config=tune.TuneConfig(num_samples=-1, time_budget_s=4*60*60),
+        param_space=config.to_dict()
     )
     # there is only one trial involved.
     result = tuner.fit().get_best_result()
