@@ -84,6 +84,19 @@ class EconomicsEnv(ParallelEnv):
             raise NotImplementedError(f"Render mode {mode} not supported")
 
     def _render_human_readable(self):
+        if self.t == 0:
+            print("Current timestep:", self.t)
+
+            print("\nObservables:")
+            observable_vars = ['dem_after_shock', 'prev_price_lvl', 'price_lvl']
+            for var in observable_vars:
+                print(f"{var.upper()}: {np.exp(getattr(self, var))}")
+            print("PREV_NET_EX:", self.PREV_NET_EX)
+            print()
+            print()
+
+            return
+
         print("Current timestep:", self.t)
         print("Agents:", self.agents)
         print("INT_RATE:", np.exp(self.one_plus_int_rate)-1)
@@ -142,7 +155,9 @@ class EconomicsEnv(ParallelEnv):
         return observations, infos
 
     def step(self, actions):
-        actions = [action for (agent, action) in actions.items()]
+        # print(actions)
+        actions = [actions[agent] for agent in self.agents]
+        print(f"These are the actions!: {actions}")
         self.one_plus_int_rate = 0.20 / (1 + np.exp(-np.array(actions).squeeze()))
         # print(f"self.one_plus_int_rate={self.one_plus_int_rate}")
         self.t += 1
