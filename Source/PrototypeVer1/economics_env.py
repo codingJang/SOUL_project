@@ -62,7 +62,8 @@ class EconomicsEnv(ParallelEnv):
         self.std_ppl = 0.1
         self.std_pl = 0.1
         self.std_pne = 0.1
-        self.std_ne = 0.1
+        self.std_ne = 0.
+        self.exchange_rate_degree = 7
     
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -166,8 +167,8 @@ class EconomicsEnv(ParallelEnv):
         # print(f"-------self.total_demand------: {self.total_demand}")
         price_diff = self.price_lvl.reshape(-1, 1) - self.price_lvl.reshape(1, -1)
         int_rate_diff = self.one_plus_int_rate.reshape(-1, 1) - self.one_plus_int_rate.reshape(1, -1)
-        self.nom_exchange_rate = price_diff - 7 * int_rate_diff
-        self.real_exchange_rate = - 7 * int_rate_diff
+        self.nom_exchange_rate = price_diff - self.exchange_rate_degree * int_rate_diff
+        self.real_exchange_rate = - self.exchange_rate_degree * int_rate_diff
 
         NUM = np.exp(self.real_exchange_rate).T
         DEN = np.sum(NUM, axis=0, keepdims=True)
