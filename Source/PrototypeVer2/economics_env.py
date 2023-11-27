@@ -202,8 +202,7 @@ class EconomicsEnv(ParallelEnv):
         observations = {agent:self.observation.flatten().astype(np.float32) for agent in self.agents}
 
         self.GDP = np.exp(self.total_demand) + self.NET_EX
-        self.GDP_ratio = self.GDP / np.sum(self.GDP)
-        rewards = dict(zip(self.agents, list(self.GDP_ratio)))
+        rewards = dict(zip(self.agents, list(self.GDP)))
         # print(rewards)
         terminations = {agent:False for agent in self.agents}
         truncations = {agent:False for agent in self.agents}

@@ -45,7 +45,7 @@ observations, infos = economics_env.reset()
 # Load trained policies for AI agents
 num_agents = N  # Assuming N is defined in economics_env
 policies = {}
-my_experiment_name = "APPO_2023-11-27_21-47-18"
+my_experiment_name = "APPO_2023-11-27_17-08-47"
 my_trial_name_5 = "APPO_economics_environment_a0e0a_00005_5_gamma=0.9779,lr=0.0001_2023-11-27_17-08-47"
 my_trial_name_6 = "APPO_economics_environment_a0e0a_00006_6_gamma=0.9384,lr=0.0000_2023-11-27_17-08-47"
 
