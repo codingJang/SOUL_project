@@ -77,7 +77,7 @@ class EconomicsEnv(ParallelEnv):
 
     def render(self, mode='human'):
         if mode == 'human':
-            self._render_human_readable()
+            return self._render_human_readable()
         elif mode == 'array':
             return self._render_array()
         else:
@@ -95,7 +95,7 @@ class EconomicsEnv(ParallelEnv):
             print()
             print()
 
-            return
+            return None
 
         print("Current timestep:", self.t)
         print("Agents:", self.agents)
@@ -125,6 +125,18 @@ class EconomicsEnv(ParallelEnv):
         print("Net Exports:", self.NET_EX)
         print()
         print()
+
+        render_res = {
+            'ts': self.t,
+            'agents': self.agents,
+            'interest_rates': np.exp(self.one_plus_int_rate)-1,
+            'gdp': self.GDP,
+            'dem_after_shock': self.dem_after_shock, 
+            'prev_price_lvl': self.prev_price_lvl, 
+            'price_lvl': self.price_lvl
+        }
+        return render_res
+
 
     def _render_array(self):
         # Concatenate all relevant arrays into a single numpy array for more technical analysis
