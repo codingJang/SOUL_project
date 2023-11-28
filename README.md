@@ -20,4 +20,4 @@ Below are the descriptions for important directories:
 
 **.Source/MultiAgentDeepQLearning:** We use Deep Q-Network (DQN) architectures and their variants to model agents. Reasons for choosing DQN includes ease of analysis, decent performance and popularity. Most RL setups assume stationarity of the transition dynamics, meaning they assume the laws underlying the environment do not change. However, introducing multiple agents requires that one agent can adapt to other agent's strategic change, which introduces further challenge.
 
-** Should mention how to install packages etc. **
+**.Source/PrototypeVer1:** A working prototype of PPO agents learning in an economical environment. Each country(=agent) can set its own interest rate at each time step. The right policy will maximize the share of GDP at the end of the 

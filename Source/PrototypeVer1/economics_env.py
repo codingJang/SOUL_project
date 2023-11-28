@@ -63,7 +63,8 @@ class EconomicsEnv(ParallelEnv):
         self.std_pl = 0.1
         self.std_pne = 0.1
         self.std_ne = 0.
-        self.exchange_rate_degree = 7
+        self.exchange_rate_degree = 1
+        self.demand_penalty_degree = 10
     
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -194,7 +195,7 @@ class EconomicsEnv(ParallelEnv):
         self.price_lvl = np.log(np.exp(self.price_lvl)) + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
         self.price_lvl = (self.price_lvl - np.mean(self.price_lvl)) / np.std(self.price_lvl)
         self.one_plus_inf_rate = self.price_lvl - self.prev_price_lvl
-        self.given_demand = self.given_demand - self.one_plus_inf_rate
+        self.given_demand = self.given_demand - self.demand_penalty_degree * self.one_plus_inf_rate
         self.ETA = self.STD_ETA * np.random.randn(self.num_agents)
         self.one_plus_shock = np.log(np.maximum(1e-10, 1+(self.rho * (np.exp(self.one_plus_shock)-1) + self.ETA)))
         self.dem_after_shock = self.given_demand + self.one_plus_shock

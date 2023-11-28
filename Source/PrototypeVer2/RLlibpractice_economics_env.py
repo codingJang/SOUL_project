@@ -112,7 +112,7 @@ if __name__ == "__main__":
             #     "agent_2": (None, obs_space, act_space, {})
             # },
             policies=env.get_agent_ids(),
-            policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id),
+            policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id),  # all policies map to themselves (independent PPO learning)
         )
         .debugging(
             log_level="DEBUG"

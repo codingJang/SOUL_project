@@ -45,12 +45,12 @@ observations, infos = economics_env.reset()
 # Load trained policies for AI agents
 num_agents = N  # Assuming N is defined in economics_env
 policies = {}
-my_experiment_name = "APPO_2023-11-27_17-08-47"
-my_trial_name_5 = "APPO_economics_environment_a0e0a_00005_5_gamma=0.9779,lr=0.0001_2023-11-27_17-08-47"
-my_trial_name_6 = "APPO_economics_environment_a0e0a_00006_6_gamma=0.9384,lr=0.0000_2023-11-27_17-08-47"
+my_experiment_name = "APPO_2023-11-28_04-58-17"
+my_trial_name = "APPO_economics_environment_bea20_00000_0_gamma=0.9528,lr=0.0000_2023-11-28_04-58-18"
+checkpoint_folder_name = "checkpoint_000010"
 
 for i in range(1, num_agents):
-    checkpoint_path = os.path.expanduser(f"~/ray_results/{my_experiment_name}/{my_trial_name_5}/checkpoint_000004/policies/agent_{i}")
+    checkpoint_path = os.path.expanduser(f"~/ray_results/{my_experiment_name}/{my_trial_name}/{checkpoint_folder_name}/policies/agent_{i}")
     policies[f'agent_{i}'] = Policy.from_checkpoint(checkpoint_path)
 
 # Game loop

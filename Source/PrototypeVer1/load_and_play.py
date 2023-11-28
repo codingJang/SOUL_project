@@ -22,7 +22,7 @@ def get_human_action(env):
                 print("Invalid input. Please enter a float between 0 and 20.")
         except ValueError:
             print("Invalid input. Please enter a valid float.")
-    # compute the inverse of sigmoid
+    # compute the inverse of the sigmoid function
     # 1/(1+exp(-y))=x, x+x*exp(-y)=1, x*exp(-y)=1-x, exp(-y)=(1-x)/x, -y=log((1-x)/x), y=log(x/(1-x))
     # values range from 0 to 20, so we need to scale them to range from 0 to 1
     # y=log((x/20)/((1-x)/20))=log(x/(20-x))
