@@ -11,7 +11,7 @@ from ray.rllib.utils.numpy import one_hot
 import supersuit as ss
 
 
-N = 3
+N = 30
 obs_space = Box(low=-np.inf, high=np.inf, shape=(4 * N,))
 act_space = Box(low=-np.inf, high=np.inf, shape=(1,))
 
@@ -63,6 +63,8 @@ class EconomicsEnv(ParallelEnv):
         self.std_pl = 0.1
         self.std_pne = 0.1
         self.std_ne = 0.1
+        self.ex_int_degree = 2
+        self.demand_penalty = 4
     
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -162,14 +164,14 @@ class EconomicsEnv(ParallelEnv):
         self.PREV_NET_EX = np.exp(self.std_pne * np.random.randn(self.num_agents))
         self.NET_EX = np.exp(self.std_ne * np.random.randn(self.num_agents))
         self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX))
-        observations = {agent:self.observation.flatten().astype(np.float32) for agent in self.agents}
+        observations = {agent:np.roll(self.observation, i, axis=1).flatten().astype(np.float32) for i, agent in enumerate(self.agents)}
         infos = {agent:{} for agent in self.agents}
         return observations, infos
 
     def step(self, actions):
         # print(actions)
         actions = [actions[agent] for agent in self.agents]
-        print(f"These are the actions!: {actions}")
+        # print(f"These are the actions!: {actions}")
         self.one_plus_int_rate = 0.20 / (1 + np.exp(-np.array(actions).squeeze()))
         # print(f"self.one_plus_int_rate={self.one_plus_int_rate}")
         self.t += 1
@@ -178,8 +180,8 @@ class EconomicsEnv(ParallelEnv):
         # print(f"-------self.total_demand------: {self.total_demand}")
         price_diff = self.price_lvl.reshape(-1, 1) - self.price_lvl.reshape(1, -1)
         int_rate_diff = self.one_plus_int_rate.reshape(-1, 1) - self.one_plus_int_rate.reshape(1, -1)
-        self.nom_exchange_rate = price_diff - 7 * int_rate_diff
-        self.real_exchange_rate = - 7 * int_rate_diff
+        self.nom_exchange_rate = price_diff - self.ex_int_degree * int_rate_diff
+        self.real_exchange_rate = - self.ex_int_degree * int_rate_diff
 
         NUM = np.exp(self.real_exchange_rate).T
         DEN = np.sum(NUM, axis=0, keepdims=True)
@@ -205,13 +207,14 @@ class EconomicsEnv(ParallelEnv):
         self.price_lvl = np.log(np.exp(self.price_lvl)) + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
         self.price_lvl = (self.price_lvl - np.mean(self.price_lvl)) / np.std(self.price_lvl)
         self.one_plus_inf_rate = self.price_lvl - self.prev_price_lvl
-        self.given_demand = self.given_demand - self.one_plus_inf_rate
+        self.given_demand = self.given_demand - self.demand_penalty * self.one_plus_inf_rate
         self.ETA = self.STD_ETA * np.random.randn(self.num_agents)
         self.one_plus_shock = np.log(np.maximum(1e-10, 1+(self.rho * (np.exp(self.one_plus_shock)-1) + self.ETA)))
         self.dem_after_shock = self.given_demand + self.one_plus_shock
         
         self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX))
-        observations = {agent:self.observation.flatten().astype(np.float32) for agent in self.agents}
+        observations = {agent:np.roll(self.observation, i, axis=1).flatten().astype(np.float32) for i, agent in enumerate(self.agents)}
+        # print(observations)
 
         self.GDP = np.exp(self.total_demand) + self.NET_EX
         rewards = dict(zip(self.agents, list(self.GDP)))

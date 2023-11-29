@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
             'prev_price_lvl',
             'price_lvl'
         ]
-        self.N = 2
+        self.N = N
         self.history = { key:[deque(maxlen=100) for _ in range(self.N)] for key in self.items }
         self.colors = ['blue', 'orange', 'green', 'red']
         self.currentAction = 150
@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
         human_action = np.log(np.clip(self.currentAction / (20-self.currentAction), 1e-5, 1-1e-5))
 
         # Get actions for AI agents
-        actions = {f'agent_{i}': self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'])[0] for i in range(1, self.N)}
+        actions = {f'agent_{i}': self.policies[f'default_policy'].compute_single_action(self.observations[f'agent_{i}'])[0] for i in range(1, self.N)}
         actions['agent_0'] = np.array([human_action], dtype=np.float32)
 
         # Step the environment
@@ -105,15 +105,12 @@ class MainWindow(QMainWindow):
         getattr(self.ui, "wdt_history").ShowHistoryPlot(value, self.N, self.colors, label)
 
     def load_env(self):
-        my_experiment_name = "APPO_2023-11-28_23-19-22"
-        my_trial_name = "APPO_economics_environment_90392_00000_0_gamma=0.9444,lr=0.0000_2023-11-28_23-19-22"
-        checkpoint_name = "checkpoint_000009"
+        my_checkpoint_path = "APPO_2023-11-29_00-15-52/APPO_economics_environment_74f4e_00000_0_gamma=0.9379,lr=0.0001_2023-11-29_00-15-52/checkpoint_000002/"
         self.env = EconomicsEnv()
         self.policies = {}
         self.observations, _ = self.env.reset()
-        for i in range(1, self.N):
-            checkpoint_path = os.path.expanduser(f"~/ray_results/{my_experiment_name}/{my_trial_name}/{checkpoint_name}/policies/agent_{i}")
-            self.policies[f'agent_{i}'] = Policy.from_checkpoint(checkpoint_path)
+        checkpoint_path = os.path.expanduser(f"~/ray_results/{my_checkpoint_path}/policies/default_policy")
+        self.policies[f'default_policy'] = Policy.from_checkpoint(checkpoint_path)
 
     def closeEvent(self, *args, **kwargs):
         self.env.close()
