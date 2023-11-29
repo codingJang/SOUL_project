@@ -1,0 +1,5 @@
+functools
+gymnasium
+numpy
+pettingzoo
+ray[rllib]
