@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
             'prev_price_lvl',
             'price_lvl'
         ]
-        self.N = 2
+        self.N = 3
         self.history = { key:[deque(maxlen=100) for _ in range(self.N)] for key in self.items }
         self.colors = ['blue', 'orange', 'green', 'red']
         self.currentAction = 150
@@ -70,7 +70,10 @@ class MainWindow(QMainWindow):
 
     def on_simulate(self, event):
         self.env.render(mode='human')
-        human_action = np.log(np.clip(self.currentAction / (20-self.currentAction), 1e-5, 1-1e-5))
+        currentAction = np.clip(self.currentAction, 1e-5, 20-1e-5)
+        human_action = np.log(currentAction / (20-currentAction))
+        print("currentAction", currentAction) # Correct
+        print("human_action", human_action) # Incorrect, -1e-5
 
         # Get actions for AI agents
         actions = {f'agent_{i}': self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'])[0] for i in range(1, self.N)}

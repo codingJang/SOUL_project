@@ -11,7 +11,7 @@ from ray.rllib.utils.numpy import one_hot
 import supersuit as ss
 
 
-N = 7
+N = 3
 obs_space = Box(low=-np.inf, high=np.inf, shape=(4 * N,))
 act_space = Box(low=-np.inf, high=np.inf, shape=(1,))
 
@@ -232,7 +232,7 @@ class EconomicsEnv(ParallelEnv):
             self.agents = []
         
         # a = np.array([1,2,3]) / np.array([0, 1, 2])
-        # self.render(mode='human')
+        self.render(mode='human')
 
         return observations, rewards, terminations, truncations, infos
 
