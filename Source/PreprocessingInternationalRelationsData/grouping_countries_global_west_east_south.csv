@@ -1,0 +1,196 @@
+IGO Dataset,CtryAbb,lv0,lv1,lv2,St.Real,Neo.Real
+Afghanistan,AFG,,0,0,0,0
+Albania,ALB,,0,0,0,0
+Algeria,ALG,,4,5,0,0
+Andorra,AND,,0,0,0,0
+Angola,ANG,,9,5,0,0
+Antigua and Barbuda,AAB,,0,17,0,0
+Argentina,ARG,,25,17,0,0
+Armenia,ARM,,3,4,0,0
+Australia,AUL,,19,14,10,1
+Austria,AUS,,2,2,0,0
+Azerbaijan,AZE,,10,6,0,0
+"Bahamas, The",BHM,,0,17,0,0
+Bahrain,BAH,,12,8,0,0
+Bangladesh,BNG,,33,0,0,0
+Barbados,BAR,,0,17,0,0
+Belarus,BLR,,3,4,0,0
+Belgium,BEL,,2,2,0,0
+Belize,BLZ,,0,17,0,0
+Benin,BEN,,5,5,0,0
+Bhutan,BHU,,0,0,0,0
+Bolivia,BOL,,0,17,0,0
+Bosnia and Herzegovina,BOS,,0,0,0,0
+Botswana,BOT,,9,5,0,0
+Brazil,BRA,,24,17,7,3
+Brunei,BRU,,16,11,0,0
+Bulgaria,BUL,,2,2,0,0
+Burkina Faso,BFO,,5,5,0,0
+Myanmar,MYA,,16,11,0,0
+Burundi,BUI,,8,5,0,0
+Cabo Verde,CAP,,5,5,0,0
+Cambodia,CAM,,16,11,0,0
+Cameroon,CAO,,6,5,0,0
+Canada,CAN,,22,16,0,1
+Central African Republic,CEN,,6,5,0,0
+Chad,CHA,,6,5,0,0
+Chile,CHL,,28,17,0,0
+China,CHN,,15,10,2,2
+Colombia,COL,,29,17,0,0
+Comoros,COM,,0,5,0,0
+"Congo, Democratic Republic of the",DRC,,8,5,0,0
+"Congo, Republic of the",CON,,6,5,0,0
+Costa Rica,COS,,0,17,0,0
+Cote d'Ivoire,CDI,,5,5,0,0
+Croatia,CRO,,2,2,0,0
+Cuba,CUB,,0,17,0,0
+Cyprus,CYP,,2,2,0,0
+Czechia,CZE,,2,2,0,0
+Denmark,DEN,,2,2,0,0
+Djibouti,DJI,,7,5,0,0
+Dominica,DMA,,0,17,0,0
+Dominican Republic,DOM,,0,17,0,0
+Ecuador,ECU,,0,17,0,0
+Egypt,EGY,,4,5,13,1
+El Salvador,SAL,,0,17,0,0
+Equatorial Guinea,EQG,,6,5,0,0
+Eritrea,ERI,,7,5,0,0
+Estonia,EST,,2,2,0,0
+Eswatini,SWA,,9,5,0,0
+Ethiopia,ETH,,7,5,12,3
+Fiji,FIJ,,0,0,0,0
+Finland,FIN,,2,2,0,0
+France,FRN,,2,2,3,1
+Gabon,GAB,,6,5,0,0
+"Gambia, The",GAM,,5,5,0,0
+Georgia,GRG,,0,0,0,0
+Germany,GER,,2,2,3,1
+Ghana,GHA,,5,5,0,0
+Greece,GRC,,2,2,0,0
+Grenada,GRN,,0,17,0,0
+Guatemala,GUA,,0,17,0,0
+Guinea,GUI,,5,5,0,0
+Guinea-Bissau,GNB,,5,5,0,0
+Guyana,GUY,,0,17,0,0
+Haiti,HAI,,0,17,0,0
+Honduras,HON,,0,17,0,0
+Hungary,HUN,,2,2,0,0
+Iceland,ICE,,0,0,0,0
+India,IND,,14,9,6,3
+Indonesia,INS,,16,11,11,3
+Iran,IRN,,11,7,0,2
+Iraq,IRQ,,11,7,0,0
+Ireland,IRE,,1,1,0,0
+Israel,ISR,,27,0,0,0
+Italy,ITA,,2,2,3,1
+Jamaica,JAM,,0,17,0,0
+Japan,JPN,,18,13,5,1
+Jordan,JOR,,0,0,0,0
+Kazakhstan,KZK,,13,0,0,0
+Kenya,KEN,,8,5,12,3
+Kiribati,KIR,,0,0,0,0
+"Korea, North",PRK,,0,0,0,0
+"Korea, South",KOR,,17,12,9,1
+Kosovo,KOS,,0,0,0,0
+Kuwait,KUW,,12,8,0,0
+Kyrgyzstan,KYR,,13,0,0,0
+Laos,LAO,,16,11,0,0
+Latvia,LAT,,2,2,0,0
+Lebanon,LEB,,11,7,0,0
+Lesotho,LES,,9,5,0,0
+Liberia,LBR,,5,5,0,0
+Libya,LIB,,4,5,0,0
+Liechtenstein,LIE,,26,3,0,0
+Lithuania,LIT,,2,2,0,0
+Luxembourg,LUX,,2,2,0,0
+Madagascar,MAG,,9,5,0,0
+Malawi,MAW,,9,5,0,0
+Malaysia,MAL,,16,11,11,3
+Maldives,MAD,,14,9,0,0
+Mali,MLI,,5,5,0,0
+Malta,MLT,,2,2,0,0
+Marshall Islands,MSI,,0,0,0,0
+Mauritania,MAA,,4,5,0,0
+Mauritius,MAS,,0,5,0,0
+Mexico,MEX,,23,15,0,0
+"Micronesia, Federated States of",FSM,,0,0,0,0
+Moldova,MLD,,2,2,0,0
+Monaco,MNC,,0,0,0,0
+Mongolia,MON,,0,0,0,0
+Montenegro,MNG,,0,0,0,0
+Morocco,MOR,,4,5,0,0
+Mozambique,MZM,,9,5,0,0
+Namibia,NAM,,9,5,0,0
+Nauru,NAU,,0,0,0,0
+Nepal,NEP,,0,0,0,0
+Netherlands,NTH,,2,2,0,0
+New Zealand,NEW,,20,14,0,0
+Nicaragua,NIC,,0,17,0,0
+Niger,NIR,,5,5,0,0
+Nigeria,NIG,,5,5,12,3
+North Macedonia,MAC,,0,0,0,0
+Norway,NOR,,2,2,0,0
+Oman,OMA,,12,8,0,0
+Pakistan,PAK,,30,10,0,0
+Palau,PAL,,0,0,0,0
+Panama,PAN,,0,17,0,0
+Papua New Guinea,PNG,,0,0,0,0
+Paraguay,PAR,,0,17,0,0
+Peru,PER,,32,17,0,0
+Philippines,PHI,,16,11,0,0
+Poland,POL,,2,2,0,0
+Portugal,POR,,2,2,0,0
+Qatar,QAT,,12,8,0,0
+Romania,ROM,,2,2,0,0
+Russia,RUS,,3,4,8,2
+Rwanda,RWA,,8,5,0,0
+Saint Kitts and Nevis,SKN,,0,17,0,0
+Saint Lucia,SLU,,0,17,0,0
+Saint Vincent and the Grenadines,SVG,,0,17,0,0
+Samoa,WSM,,0,0,0,0
+San Marino,SNM,,0,0,0,0
+Sao Tome and Principe,STP,,6,5,0,0
+Saudi Arabia,SAU,,12,8,13,3
+Senegal,SEN,,5,5,0,0
+Serbia,SER,,0,0,0,0
+Seychelles,SEY,,9,5,0,0
+Sierra Leone,SIE,,5,5,0,0
+Singapore,SIN,,16,11,0,0
+Slovakia,SLO,,2,2,0,0
+Slovenia,SLV,,2,2,0,0
+Solomon Islands,SOL,,0,0,0,0
+Somalia,SOM,,7,5,0,0
+South Africa,SAF,,9,5,12,3
+South Sudan,SSD,,8,5,0,0
+Spain,SPN,,2,2,0,0
+Sri Lanka,SRI,,0,0,0,0
+Sudan,SUD,,7,5,0,0
+Suriname,SUR,,0,17,0,0
+Sweden,SWD,,2,2,0,0
+Switzerland,SWZ,,26,3,0,0
+Syria,SYR,,11,7,0,0
+Taiwan,TAW,,31,0,0,1
+Tajikistan,TAJ,,13,0,0,0
+Tanzania,TAZ,,8,5,0,0
+Thailand,THI,,16,11,11,3
+Timor-Leste,ETM,,0,0,0,0
+Togo,TOG,,5,5,0,0
+Tonga,TON,,0,0,0,0
+Trinidad and Tobago,TRI,,0,17,0,0
+Tunisia,TUN,,4,5,0,0
+Turkey (Turkiye),TUR,,10,6,15,3
+Turkmenistan,TKM,,13,0,0,0
+Tuvalu,TUV,,0,0,0,0
+Uganda,UGA,,8,5,0,0
+Ukraine,UKR,,2,2,0,0
+United Arab Emirates,UAE,,12,8,0,0
+United Kingdom,UKG,,1,1,4,1
+United States,USA,,21,15,1,1
+Uruguay,URU,,0,17,0,0
+Uzbekistan,UZB,,13,0,0,0
+Vanuatu,VAN,,0,0,0,0
+Venezuela,VEN,,0,17,0,0
+Vietnam,DRV,,16,11,11,3
+Yemen,YEM,,0,0,0,0
+Zambia,ZAM,,9,5,0,0
+Zimbabwe,ZIM,,9,5,0,0
