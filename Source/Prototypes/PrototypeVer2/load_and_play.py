@@ -26,7 +26,9 @@ def get_human_action(env):
     # 1/(1+exp(-y))=x, x+x*exp(-y)=1, x*exp(-y)=1-x, exp(-y)=(1-x)/x, -y=log((1-x)/x), y=log(x/(1-x))
     # values range from 0 to 20, so we need to scale them to range from 0 to 1
     # y=log((x/20)/((1-x)/20))=log(x/(20-x))
-    action = np.log(np.clip(action/(20-action), 1e-5, 1-1e-5))
+    action = np.maximum(1e-5, action)
+    action = np.minimum(20-1e-5, action)
+    action = np.log(action/(20-action))
     return action
 
 def env_creator(args):
@@ -45,9 +47,9 @@ observations, infos = economics_env.reset()
 # Load trained policies for AI agents
 num_agents = N  # Assuming N is defined in economics_env
 policies = {}
-my_experiment_name = "APPO_2023-11-28_04-58-17"
-my_trial_name = "APPO_economics_environment_bea20_00000_0_gamma=0.9528,lr=0.0000_2023-11-28_04-58-18"
-checkpoint_folder_name = "checkpoint_000010"
+my_experiment_name = "APPO_2023-11-28_23-19-22"
+my_trial_name = "APPO_economics_environment_90392_00000_0_gamma=0.9444,lr=0.0000_2023-11-28_23-19-22"
+checkpoint_folder_name = "checkpoint_000001"
 
 for i in range(1, num_agents):
     checkpoint_path = os.path.expanduser(f"~/ray_results/{my_experiment_name}/{my_trial_name}/{checkpoint_folder_name}/policies/agent_{i}")

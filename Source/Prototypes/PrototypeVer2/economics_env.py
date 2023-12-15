@@ -215,7 +215,6 @@ class EconomicsEnv(ParallelEnv):
         self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX))
         observations = {agent:np.roll(self.observation, i, axis=1).flatten().astype(np.float32) for i, agent in enumerate(self.agents)}
         # print(observations)
-
         self.GDP = np.exp(self.total_demand) + self.NET_EX
         rewards = dict(zip(self.agents, list(self.GDP)))
         # print(rewards)

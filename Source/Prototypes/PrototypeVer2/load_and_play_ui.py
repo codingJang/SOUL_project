@@ -76,6 +76,9 @@ class MainWindow(QMainWindow):
         print("human_action", human_action) # Incorrect, -1e-5
 
         # Get actions for AI agents
+        for i in range(1, 3):
+            print(self.observations[f'agent_{i}'])
+            self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'])
         actions = {f'agent_{i}': self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'])[0] for i in range(1, self.N)}
         actions['agent_0'] = np.array([human_action], dtype=np.float32)
 
@@ -108,8 +111,8 @@ class MainWindow(QMainWindow):
         getattr(self.ui, "wdt_history").ShowHistoryPlot(value, self.N, self.colors, label)
 
     def load_env(self):
-        my_experiment_name = "APPO_2023-11-28_23-19-22"
-        my_trial_name = "APPO_economics_environment_90392_00000_0_gamma=0.9444,lr=0.0000_2023-11-28_23-19-22"
+        my_experiment_name = "APPO_2023-12-13_08-41-10"
+        my_trial_name = "APPO_economics_environment_5d830_00001_1_gamma=0.9906,lr=0.0000_2023-12-13_08-41-10"
         checkpoint_name = "checkpoint_000009"
         self.env = EconomicsEnv()
         self.policies = {}

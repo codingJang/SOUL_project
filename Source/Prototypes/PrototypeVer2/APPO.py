@@ -121,6 +121,7 @@ if __name__ == "__main__":
         # .rollouts(enable_connectors=False)
         # .reporting(keep_per_episode_custom_metrics=True)
     )
+    config.model['use_lstm'] = True
         
     
     """
