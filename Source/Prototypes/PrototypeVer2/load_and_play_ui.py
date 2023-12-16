@@ -76,11 +76,13 @@ class MainWindow(QMainWindow):
         print("human_action", human_action) # Incorrect, -1e-5
 
         # Get actions for AI agents
-        for i in range(1, 3):
-            print(self.observations[f'agent_{i}'])
-            self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'])
-        actions = {f'agent_{i}': self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'])[0] for i in range(1, self.N)}
+        actions = {}
         actions['agent_0'] = np.array([human_action], dtype=np.float32)
+        for i in range(self.N):
+            if i > 0:
+                _action, state_out, _ = self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'], self.state[f'agent_{i}'])
+                actions[f'agent_{i}'] = _action
+                self.state[f'agent_{i}'] = state_out
 
         # Step the environment
         self.observations, _, terminateds, _, _ = self.env.step(actions)
@@ -116,10 +118,16 @@ class MainWindow(QMainWindow):
         checkpoint_name = "checkpoint_000009"
         self.env = EconomicsEnv()
         self.policies = {}
+        self.state = {}
         self.observations, _ = self.env.reset()
-        for i in range(1, self.N):
-            checkpoint_path = os.path.expanduser(f"~/ray_results/{my_experiment_name}/{my_trial_name}/{checkpoint_name}/policies/agent_{i}")
-            self.policies[f'agent_{i}'] = Policy.from_checkpoint(checkpoint_path)
+        
+        for i in range(0, self.N):
+            if i > 0:
+                checkpoint_path = os.path.expanduser(f"~/Downloads/{checkpoint_name}/policies/agent_{i}")
+                self.policies[f'agent_{i}'] = Policy.from_checkpoint(checkpoint_path)
+            self.state[f'agent_{i}'] = [
+                np.zeros([256], np.float32) for _ in range(2)
+            ]
 
     def closeEvent(self, *args, **kwargs):
         self.env.close()
