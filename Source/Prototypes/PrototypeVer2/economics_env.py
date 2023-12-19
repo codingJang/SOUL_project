@@ -203,7 +203,7 @@ class EconomicsEnv(ParallelEnv):
         self.NET_EX = self.EX - self.IM
         self.prev_price_lvl = self.price_lvl
         # print(f"1 + self.NET_EX/np.exp(self.total_demand): {1 + self.NET_EX/np.exp(self.total_demand)}")
-        self.price_lvl = np.log(np.exp(self.price_lvl)) + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
+        self.price_lvl = self.price_lvl + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
         self.price_lvl = (self.price_lvl - np.mean(self.price_lvl)) / np.std(self.price_lvl)
         self.one_plus_inf_rate = self.price_lvl - self.prev_price_lvl
         self.given_demand = self.given_demand - self.demand_penalty * self.one_plus_inf_rate
