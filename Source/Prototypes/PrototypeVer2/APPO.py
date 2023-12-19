@@ -1,4 +1,4 @@
-import ray.rllib.algorithms.ppo.ppo_torch_policy
+import platform
 
 import ray
 from ray import air, train, tune
@@ -94,6 +94,7 @@ def env_creator(args):
 if __name__ == "__main__":
     ray.init(num_gpus=0)
     # ray.init(local_mode=True)
+    platform_name = platform.node()
     env_name = "economics_environment"
     env = env_creator({})
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
@@ -101,10 +102,9 @@ if __name__ == "__main__":
         APPOConfig()
         .training(lr=tune.loguniform(1e-5, 1e-3), gamma=tune.uniform(0.9, 0.9999), clip_param=0.2, train_batch_size=512)
         .environment(env=env_name, clip_actions=True)                                                                                                                                               
-        .rollouts(num_rollout_workers=84, recreate_failed_workers=True, restart_failed_sub_environments=True)
+        .rollouts(num_rollout_workers=7 if platform.node()=="jang-yejun-ui-MacBookAir.local" else 84, recreate_failed_workers=True, restart_failed_sub_environments=True)
         .framework(framework="torch")
-        .resources(num_learner_workers=84, num_cpus_for_local_worker=4)
-        .resources(num_learner_workers=16)
+        .resources(num_learner_workers=7 if platform.node()=="jang-yejun-ui-MacBookAir.local" else 84, num_cpus_for_local_worker=1)
         .multi_agent(
             # policies={
             #     "agent_0": (None, obs_space, act_space, {}),

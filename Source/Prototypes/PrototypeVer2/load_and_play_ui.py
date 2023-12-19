@@ -1,5 +1,6 @@
 import os
 import sys
+import platform
 import numpy as np
 from economics_env import *
 from collections import deque
@@ -115,7 +116,10 @@ class MainWindow(QMainWindow):
     def load_env(self):
         my_experiment_name = "APPO_2023-12-13_08-41-10"
         my_trial_name = "APPO_economics_environment_5d830_00001_1_gamma=0.9906,lr=0.0000_2023-12-13_08-41-10"
-        checkpoint_name = "checkpoint_000009"
+        if platform.node() == "jang-yejun-ui-MacBookAir.local":
+            my_experiment_name = "APPO_2023-12-19_15-49-43"
+            my_trial_name = "APPO_economics_environment_ca636_00000_0_gamma=0.9252,lr=0.0000_2023-12-19_15-49-43"
+        checkpoint_name = "checkpoint_000001"
         self.env = EconomicsEnv()
         self.policies = {}
         self.state = {}
@@ -123,7 +127,7 @@ class MainWindow(QMainWindow):
         
         for i in range(0, self.N):
             if i > 0:
-                checkpoint_path = os.path.expanduser(f"~/Downloads/{checkpoint_name}/policies/agent_{i}")
+                checkpoint_path = os.path.expanduser(f"~/ray_results//{my_experiment_name}/{my_trial_name}/{checkpoint_name}/policies/agent_{i}")
                 self.policies[f'agent_{i}'] = Policy.from_checkpoint(checkpoint_path)
             self.state[f'agent_{i}'] = [
                 np.zeros([256], np.float32) for _ in range(2)
@@ -133,6 +137,7 @@ class MainWindow(QMainWindow):
         self.env.close()
 
 if __name__ == '__main__':
+    print(platform.node())
     app = QApplication(sys.argv)
     mainWin = MainWindow()
     mainWin.resize(1200, 600)

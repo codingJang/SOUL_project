@@ -10,7 +10,6 @@ from pettingzoo.utils import parallel_to_aec, wrappers
 from ray.rllib.utils.numpy import one_hot
 import supersuit as ss
 
-
 N = 3
 obs_space = Box(low=-np.inf, high=np.inf, shape=(4 * N,))
 act_space = Box(low=-np.inf, high=np.inf, shape=(1,))
@@ -184,14 +183,14 @@ class EconomicsEnv(ParallelEnv):
         self.real_exchange_rate = - self.ex_int_degree * int_rate_diff
 
         NUM = np.exp(self.real_exchange_rate).T
-        DEN = np.sum(NUM, axis=0, keepdims=True)
+        DEN = np.sum(NUM, axis=1, keepdims=True)
         self.TRADE_COEFF = NUM / DEN
         TEMP = np.copy(self.TRADE_COEFF)
         np.fill_diagonal(TEMP, 0)
         self.EX = TEMP.T @ np.exp(self.total_demand)
 
         NUM_STAR = np.exp(self.real_exchange_rate)
-        DEN_STAR = np.sum(NUM_STAR, axis=1, keepdims=True)
+        DEN_STAR = np.sum(NUM_STAR, axis=0, keepdims=True)
         self.TRADE_COEFF_STAR = NUM_STAR / DEN_STAR
         TEMP_STAR = np.copy(self.TRADE_COEFF_STAR)
         np.fill_diagonal(TEMP_STAR, 0)
