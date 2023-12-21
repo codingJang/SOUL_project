@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-from economics_env import *
+from Source.Prototypes.PrototypeVer2_ps.combined_env import *
 from collections import deque
 from ray.rllib.policy.policy import Policy
 from UI.Ui_ui_mainwindow import Ui_MainWindow
@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
 
     def load_env(self):
         my_checkpoint_path = "APPO_2023-11-29_00-15-52/APPO_economics_environment_74f4e_00000_0_gamma=0.9379,lr=0.0001_2023-11-29_00-15-52/checkpoint_000002/"
-        self.env = EconomicsEnv()
+        self.env = CombinedEnv()
         self.policies = {}
         self.observations, _ = self.env.reset()
         checkpoint_path = os.path.expanduser(f"~/ray_results/{my_checkpoint_path}/policies/default_policy")

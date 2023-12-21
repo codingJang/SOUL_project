@@ -81,8 +81,8 @@ class MainWindow(QMainWindow):
         actions['agent_0'] = np.array([human_action], dtype=np.float32)
         for i in range(self.N):
             if i > 0:
-                _action, state_out, _ = self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'], self.state[f'agent_{i}'])
-                actions[f'agent_{i}'] = _action
+                action, state_out, _ = self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'], self.state[f'agent_{i}'])
+                actions[f'agent_{i}'] = action
                 self.state[f'agent_{i}'] = state_out
 
         # Step the environment

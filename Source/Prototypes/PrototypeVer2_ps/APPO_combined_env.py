@@ -1,4 +1,4 @@
-import ray.rllib.algorithms.ppo.ppo_torch_policy
+import platform
 
 import ray
 from ray import air, train, tune
@@ -11,18 +11,17 @@ from ray.rllib.env import BaseEnv
 from ray.rllib.evaluation.episode_v2 import EpisodeV2
 from ray.rllib.evaluation import RolloutWorker
 from ray.rllib.policy import Policy
-from ray.rllib.policy.policy import PolicySpec
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.utils.annotations import override
 
-from economics_env import *
+from combined_env import *
 
 from typing import Dict, Tuple
 import os
 
 
 
-class EconomicsEnvCallbacks(DefaultCallbacks):
+class CombinedEnvCallbacks(DefaultCallbacks):
     def on_episode_start(
         self,
         *,
@@ -87,7 +86,7 @@ class EconomicsEnvCallbacks(DefaultCallbacks):
             episode.custom_metrics[agent_id+"_interest_rates"].append(np.mean(0.20 / (1 + np.exp(-np.array(collector.buffers['actions'])))))
 
 def env_creator(args):
-    env = EconomicsEnv()
+    env = CombinedEnv()
     # env = ss.frame_stack_v1(env, 3)
     return env
 
@@ -95,31 +94,34 @@ def env_creator(args):
 if __name__ == "__main__":
     ray.init(num_gpus=0)
     # ray.init(local_mode=True)
-    env_name = "economics_environment"
+    platform_name = platform.node()
+    env_name = "combined_environment"
     env = env_creator({})
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
     config = (
         APPOConfig()
         .training(lr=tune.loguniform(1e-5, 1e-3), gamma=tune.uniform(0.9, 0.9999), clip_param=0.2, train_batch_size=512)
         .environment(env=env_name, clip_actions=True)                                                                                                                                               
-        .rollouts(num_rollout_workers=84, recreate_failed_workers=True, restart_failed_sub_environments=True)
+        .rollouts(num_rollout_workers=7 if platform.node()=="jang-yejun-ui-MacBookAir.local" else 84, recreate_failed_workers=True, restart_failed_sub_environments=True)
         .framework(framework="torch")
-        .resources(num_learner_workers=84, num_cpus_for_local_worker=4)
-        .resources(num_learner_workers=16)
+        .resources(num_learner_workers=7 if platform.node()=="jang-yejun-ui-MacBookAir.local" else 84, num_cpus_for_local_worker=1)
         .multi_agent(
-            policies={
-                "default_policy": PolicySpec()
-            },
-            policy_mapping_fn=(lambda agent_id, *args, **kwargs: 'default_policy'),  # parameter sharing
-            # policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id),  # independent
+            # policies={
+            #     "agent_0": (None, obs_space, act_space, {}),
+            #     "agent_1": (None, obs_space, act_space, {}),
+            #     "agent_2": (None, obs_space, act_space, {})
+            # },
+            policies=env.get_agent_ids(),
+            policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id),  # all policies map to themselves (independent PPO learning)
         )
         .debugging(
             log_level="DEBUG"
         )  # TODO: change to ERROR to match pistonball example
-        .callbacks(EconomicsEnvCallbacks)
+        .callbacks(CombinedEnvCallbacks)
         # .rollouts(enable_connectors=False)
         # .reporting(keep_per_episode_custom_metrics=True)
     )
+    config.model['use_lstm'] = True
         
     
     """
@@ -136,7 +138,7 @@ if __name__ == "__main__":
         # raise NotImplementedError(f"trial_id: {trial_id}, result.keys(): {result.keys()}")
         bool_value_1 = result["timesteps_total"] >= 10000000
         bool_value_2 = any([result["custom_metrics"][f"agent_{i}_interest_rates_max"] <= 0.001 for i in range(N)])
-        bool_value_3 = result['info']['learner'][f'default_policy']['learner_stats']['entropy'] >= 2.0
+        bool_value_3 = any([result['info']['learner'][f'agent_{i}']['learner_stats']['entropy'] >= 2.0 for i in range(N)])
         return bool_value_1 or bool_value_2 or bool_value_3
     
     tuner = tune.Tuner(

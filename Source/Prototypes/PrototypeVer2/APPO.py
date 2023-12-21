@@ -13,6 +13,7 @@ from ray.rllib.evaluation import RolloutWorker
 from ray.rllib.policy import Policy
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.utils.annotations import override
+ray.rllib.models.ModelCatalog
 
 from economics_env import *
 

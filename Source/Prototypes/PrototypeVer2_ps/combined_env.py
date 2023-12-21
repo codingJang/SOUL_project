@@ -12,8 +12,8 @@ import supersuit as ss
 
 
 N = 7
-obs_space = Box(low=-np.inf, high=np.inf, shape=(4 * N,))
-act_space = Box(low=-np.inf, high=np.inf, shape=(1,))
+obs_space = Box(low=-np.inf, high=np.inf, shape=((N + 4) * N,))
+act_space = Dict({'eco':Box(low=-np.inf, high=np.inf, shape=(1,)), 'pol':Box(low=-np.inf, high=np.inf, shape=(2 * N,))})
 
 
 def env(render_mode=None):
@@ -35,13 +35,13 @@ def raw_env(render_mode=None):
     To support the AEC API, the raw_env() function just uses the from_parallel
     function to convert from a ParallelEnv to an AEC env
     """
-    env = EconomicsEnv(render_mode=render_mode)
+    env = CombinedEnv(render_mode=render_mode)
     env = parallel_to_aec(env)
     env = ss.clip_actions_v0(env)
     return env
 
 
-class EconomicsEnv(ParallelEnv):
+class CombinedEnv(ParallelEnv):
     metadata = {
         "render_modes": ["human"],
         "name": "politics_environment_v0"
@@ -65,6 +65,7 @@ class EconomicsEnv(ParallelEnv):
         self.std_ne = 0.1
         self.ex_int_degree = 1
         self.demand_penalty = 1
+        self.delta = 0.01
     
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -125,6 +126,9 @@ class EconomicsEnv(ParallelEnv):
         print("Exports:", self.EX)
         print("Imports:", self.IM)
         print("Net Exports:", self.NET_EX)
+        
+        print("\nAffinity Matrix:")
+        print(self.affinity)
         print()
         print()
 
@@ -163,47 +167,43 @@ class EconomicsEnv(ParallelEnv):
         self.price_lvl = self.std_pl * np.random.randn(self.num_agents)
         self.PREV_NET_EX = np.exp(self.std_pne * np.random.randn(self.num_agents))
         self.NET_EX = np.exp(self.std_ne * np.random.randn(self.num_agents))
-        self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX))
-        observations = {agent:np.roll(self.observation, i, axis=1).flatten().astype(np.float32) for i, agent in enumerate(self.agents)}
+        self.eco_observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX)).T
+        self.affinity = np.random.randn(self.num_agents, self.num_agents)
+        observations = {}
+        for i, agent in enumerate(self.agents):
+            observations[agent] = np.hstack((self.eco_observation, self.affinity))
+            observations[agent] = np.roll(observations[agent], i, axis=0)
+            observations[agent] = observations[agent].flatten().astype(np.float32)
         infos = {agent:{} for agent in self.agents}
         return observations, infos
 
     def step(self, actions):
-        # print(actions)
-        actions = [actions[agent] for agent in self.agents]
-        # print(f"These are the actions!: {actions}")
-        self.one_plus_int_rate = 0.20 / (1 + np.exp(-np.array(actions).squeeze()))
-        # print(f"self.one_plus_int_rate={self.one_plus_int_rate}")
-        self.t += 1
+        eco_actions = [actions[agent]['eco'] for agent in self.agents]
+        pol_actions = [actions[agent]['pol'] for agent in self.agents]
 
+        self.one_plus_int_rate = 0.20 / (1 + np.exp(-np.array(eco_actions).squeeze()))
         self.total_demand = self.dem_after_shock - self.one_plus_int_rate
-        # print(f"-------self.total_demand------: {self.total_demand}")
         price_diff = self.price_lvl.reshape(-1, 1) - self.price_lvl.reshape(1, -1)
         int_rate_diff = self.one_plus_int_rate.reshape(-1, 1) - self.one_plus_int_rate.reshape(1, -1)
         self.nom_exchange_rate = price_diff - self.ex_int_degree * int_rate_diff
         self.real_exchange_rate = - self.ex_int_degree * int_rate_diff
-
         NUM = np.exp(self.real_exchange_rate).T
         DEN = np.sum(NUM, axis=0, keepdims=True)
         self.TRADE_COEFF = NUM / DEN
         TEMP = np.copy(self.TRADE_COEFF)
         np.fill_diagonal(TEMP, 0)
         self.EX = TEMP.T @ np.exp(self.total_demand)
-
         NUM_STAR = np.exp(self.real_exchange_rate)
         DEN_STAR = np.sum(NUM_STAR, axis=1, keepdims=True)
         self.TRADE_COEFF_STAR = NUM_STAR / DEN_STAR
         TEMP_STAR = np.copy(self.TRADE_COEFF_STAR)
         np.fill_diagonal(TEMP_STAR, 0)
         self.EX_STAR = TEMP_STAR @ np.exp(self.total_demand)
-
         assert (self.EX == self.EX_STAR).all(), f"self.EX=={self.EX} self.EX_STAR={self.EX_STAR}"
-
         self.IM = np.sum(TEMP, axis=1) * np.exp(self.total_demand)
         self.PREV_NET_EX = self.NET_EX
         self.NET_EX = self.EX - self.IM
         self.prev_price_lvl = self.price_lvl
-        # print(f"1 + self.NET_EX/np.exp(self.total_demand): {1 + self.NET_EX/np.exp(self.total_demand)}")
         self.price_lvl = np.log(np.exp(self.price_lvl)) + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
         self.price_lvl = (self.price_lvl - np.mean(self.price_lvl)) / np.std(self.price_lvl)
         self.one_plus_inf_rate = self.price_lvl - self.prev_price_lvl
@@ -211,28 +211,54 @@ class EconomicsEnv(ParallelEnv):
         self.ETA = self.STD_ETA * np.random.randn(self.num_agents)
         self.one_plus_shock = np.log(np.maximum(1e-10, 1+(self.rho * (np.exp(self.one_plus_shock)-1) + self.ETA)))
         self.dem_after_shock = self.given_demand + self.one_plus_shock
-        
-        self.observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX))
-        observations = {agent:np.roll(self.observation, i, axis=1).flatten().astype(np.float32) for i, agent in enumerate(self.agents)}
-        # print(observations)
-
+        self.eco_observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX)).T
         self.GDP = np.exp(self.total_demand) + self.NET_EX
-        rewards = dict(zip(self.agents, list(self.GDP)))
-        # print(rewards)
+        
+        invites = []
+        accepts = []
+        softmax = lambda x : np.exp(x) / np.sum(np.exp(x), axis=0)
+        sigmoid = lambda x : 1 / (1 + np.exp(x))
+        for i, pol_action in enumerate(pol_actions):
+            invite_pref = pol_action[:self.num_agents]
+            accept_pref = pol_action[self.num_agents:]
+            invite_prob = softmax(invite_pref)
+            accept_prob = sigmoid(accept_pref)
+            invite_choice = np.random.choice(self.num_agents, p=invite_prob)
+            invite = one_hot(invite_choice, depth=self.num_agents)
+            print(accept_prob)
+            accept = np.random.uniform(size=self.num_agents) < accept_prob
+            invite[i] = 0
+            accept[i] = 0
+            invites.append(invite)
+            accepts.append(accept)
+        invites = np.vstack(invites)
+        accepts = np.vstack(accepts)
+        delta_affinity = self.delta * 0.5 * (accepts.T * invites + invites.T * accepts)
+        self.affinity += delta_affinity
+
+        observations = {}
+        for i, agent in enumerate(self.agents):
+            observations[agent] = np.hstack((self.eco_observation, self.affinity))
+            observations[agent] = np.roll(observations[agent], i, axis=0)
+            observations[agent] = observations[agent].flatten().astype(np.float32)
+
+        print(self.affinity)
+        print(self.GDP)
+        rewards = self.affinity @ self.GDP
+        rewards = dict(zip(self.agents, list(rewards)))
         terminations = {agent:False for agent in self.agents}
         truncations = {agent:False for agent in self.agents}
         infos = {agent:{} for agent in self.agents}
 
+        self.t += 1
+        self.render(mode=self.render_mode)
+
         if self.t >= 100:
-            # print("Game does end")
             truncations = {agent:True for agent in self.agents}
             terminations = {agent:True for agent in self.agents}
         
         if all(terminations.values()) or all(truncations.values()):
             self.agents = []
-        
-        # a = np.array([1,2,3]) / np.array([0, 1, 2])
-        # self.render(mode='human')
 
         return observations, rewards, terminations, truncations, infos
 
@@ -242,6 +268,6 @@ if __name__ == "__main__":
 
     np.seterr(all='raise', divide='raise', over='raise', under='raise', invalid='raise')
     # np.seterr
-    my_env = EconomicsEnv(render_mode='human')
+    my_env = CombinedEnv(render_mode='human')
     parallel_api_test(my_env, num_cycles=1_000)
     # render_test(EconomicsEnv)
