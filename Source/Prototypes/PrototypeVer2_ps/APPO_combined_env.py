@@ -147,7 +147,7 @@ if __name__ == "__main__":
             checkpoint_config=train.CheckpointConfig(checkpoint_frequency=10),
             stop=stop_fn
         ),
-        tune_config=tune.TuneConfig(), # num_samples=-1, time_budget_s=4*60*60),
+        tune_config=tune.TuneConfig(num_samples=-1, time_budget_s=4*60*60),
         param_space=config.to_dict()
     )
     # there is only one trial involved.
