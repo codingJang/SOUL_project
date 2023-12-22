@@ -156,7 +156,7 @@ class CombinedEnv(ParallelEnv):
     def close(self):
         pass
 
-    def reset(self, seed=None, options=None):
+    def reset(self, *, seed=None, options=None):
         self.agents = copy(self.possible_agents)
         self.t = 0
         # all small letter variables denote logarithmic variables
@@ -184,7 +184,6 @@ class CombinedEnv(ParallelEnv):
         
         eco_actions = [actions[agent]['eco'] for agent in self.agents if 'eco' in actions[agent]]
         pol_actions = [actions[agent]['pol'] for agent in self.agents if 'pol' in actions[agent]]
-        eco_actions.insert(0, [0])
         print('---', pol_actions)
         pol_actions.insert(0, [0] * len(pol_actions[0]))
 
