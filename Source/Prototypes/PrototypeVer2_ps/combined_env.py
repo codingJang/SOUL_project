@@ -138,8 +138,10 @@ class CombinedEnv(ParallelEnv):
             'interest_rates': np.exp(self.one_plus_int_rate)-1,
             'gdp': self.GDP,
             'dem_after_shock': self.dem_after_shock, 
-            'prev_price_lvl': self.prev_price_lvl, 
-            'price_lvl': self.price_lvl
+            'delta_price_lvl': self.price_lvl - self.prev_price_lvl, 
+            'price_lvl': self.price_lvl,
+            'affinity': self.affinity,
+            'delta_affinity': self.delta_affinity
         }
         return render_res
 
@@ -169,6 +171,7 @@ class CombinedEnv(ParallelEnv):
         self.NET_EX = np.exp(self.std_ne * np.random.randn(self.num_agents))
         self.eco_observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX)).T
         self.affinity = np.random.randn(self.num_agents, self.num_agents)
+        self.delta_affinity = self.affinity
         observations = {}
         for i, agent in enumerate(self.agents):
             observations[agent] = np.hstack((self.eco_observation, self.affinity))
@@ -178,8 +181,12 @@ class CombinedEnv(ParallelEnv):
         return observations, infos
 
     def step(self, actions):
-        eco_actions = [actions[agent]['eco'] for agent in self.agents]
-        pol_actions = [actions[agent]['pol'] for agent in self.agents]
+        
+        eco_actions = [actions[agent]['eco'] for agent in self.agents if 'eco' in actions[agent]]
+        pol_actions = [actions[agent]['pol'] for agent in self.agents if 'pol' in actions[agent]]
+        eco_actions.insert(0, [0])
+        print('---', pol_actions)
+        pol_actions.insert(0, [0] * len(pol_actions[0]))
 
         self.one_plus_int_rate = 0.20 / (1 + np.exp(-np.array(eco_actions).squeeze()))
         self.total_demand = self.dem_after_shock - self.one_plus_int_rate
@@ -214,6 +221,7 @@ class CombinedEnv(ParallelEnv):
         self.eco_observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX)).T
         self.GDP = np.exp(self.total_demand) + self.NET_EX
         
+        
         invites = []
         accepts = []
         softmax = lambda x : np.exp(x) / np.sum(np.exp(x), axis=0)
@@ -234,6 +242,7 @@ class CombinedEnv(ParallelEnv):
         invites = np.vstack(invites)
         accepts = np.vstack(accepts)
         delta_affinity = self.delta * 0.5 * (accepts.T * invites + invites.T * accepts)
+        self.delta_affinity = delta_affinity
         self.affinity += delta_affinity
 
         observations = {}
