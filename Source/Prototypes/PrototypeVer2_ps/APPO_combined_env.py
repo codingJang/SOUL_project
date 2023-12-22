@@ -86,7 +86,7 @@ class CombinedEnvCallbacks(DefaultCallbacks):
             episode.custom_metrics[agent_id+"_interest_rates"].append(np.mean(0.20 / (1 + np.exp(-np.array(collector.buffers['actions'])))))
 
 def env_creator(args):
-    env = CombinedEnv()
+    env = CombinedEnv(render_mode='human')
     # env = ss.frame_stack_v1(env, 3)
     return env
 

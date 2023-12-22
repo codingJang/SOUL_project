@@ -1,7 +1,10 @@
 import os
 import sys
+import time
 import numpy as np
+import threading
 from Source.Prototypes.PrototypeVer2_ps.combined_env import *
+# from combined_env import *
 from collections import deque
 from ray.rllib.policy.policy import Policy
 from UI.Ui_ui_mainwindow import Ui_MainWindow
@@ -16,65 +19,61 @@ class MainWindow(QMainWindow):
 
         # Init variables
         self.items = [
-            # "agents",
             "interest_rates",
             'gdp',
             'dem_after_shock',
-            'prev_price_lvl',
-            'price_lvl'
+            'price_lvl',
+            'delta_price_lvl',
+            'affinity',
+            'delta_affinity'
         ]
         self.N = N
+        self.nStep = 0
+        self.is_Playing = False
+        self.is_Running = True
         self.history = { key:[deque(maxlen=100) for _ in range(self.N)] for key in self.items }
-        self.colors = ['blue', 'orange', 'green', 'red']
+        self.colors = ['blue', 'orange', 'green', 'red', 'purple', 'pink', 'cyan']
         self.currentAction = 150
 
         # Reset UI default values
         self.ui.cmbFilter.addItems(self.items)
-        self.ui.action_slider.setRange(0, 200)
-        self.ui.action_slider.setSingleStep(1)
-        self.ui.action_slider.setValue(self.currentAction)
-        self.ui.txt_slider.setText(str(self.currentAction / 10.0))
-        self.ui.groupBox.setVisible(False)
 
         # Link components listeners
-        # Connect slider's valueChanged signal to update_line_edit slot
-        self.ui.action_slider.valueChanged.connect(self.update_line_edit)
-        # Connect line edit's editingFinished signal to update_slider_value slot
-        self.ui.txt_slider.editingFinished.connect(self.update_slider_value)
         self.ui.cmbFilter.currentIndexChanged.connect(self.On_FilterChanged)
-        self.ui.btnPlay.clicked.connect(self.on_simulate)
-        self.update_line_edit(self.currentAction)
+        self.ui.btnPlay.clicked.connect(self.on_simulate_event)
+        self.ui.btnPlay.setText("Start")
+        self.thread = threading.Thread(target=self.process).start()
 
         # load env
         self.load_env()
 
-    def update_line_edit(self, value):
-        # Convert integer value to float for precision
-        float_value = value / 10.0
-        self.ui.txt_slider.setText(str(float_value))
-        self.currentAction = float_value
-
-    def update_slider_value(self):
-        try:
-            # Try to convert the text to a float and then to an integer for the slider
-            float_value = float(self.ui.txt_slider.text())
-            slider_value = min(200, max(0, int(float_value * 10)))
-            self.ui.action_slider.setValue(slider_value)
-            self.currentAction = float_value
-        except ValueError:
-            # Handle the case where the entered value is not a valid float
-            pass
+    def process(self):
+        while self.is_Running:
+            time.sleep(1)
+            if self.is_Playing:
+                self.on_simulate()
 
     def On_FilterChanged(self):
         self.update_history()
 
-    def on_simulate(self, event):
+    def on_simulate_event(self, event):
+        self.is_Playing = not self.is_Playing
+        self.ui.btnPlay.setText("Pause" if self.is_Playing else "Play")
+
+    def on_simulate(self):
         self.env.render(mode='human')
         human_action = np.log(np.clip(self.currentAction / (20-self.currentAction), 1e-5, 1-1e-5))
 
         # Get actions for AI agents
-        actions = {f'agent_{i}': self.policies[f'default_policy'].compute_single_action(self.observations[f'agent_{i}'])[0] for i in range(1, self.N)}
+        # actions = {f'agent_{i}': self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'])[0] for i in range(1, self.N)}
+        # actions['agent_0'] = np.array([human_action], dtype=np.float32)
+        actions = {}
         actions['agent_0'] = np.array([human_action], dtype=np.float32)
+        for i in range(self.N):
+            if i > 0:
+                action, state_out, _ = self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'], self.state[f'agent_{i}'])
+                actions[f'agent_{i}'] = action
+                self.state[f'agent_{i}'] = state_out
 
         # Step the environment
         self.observations, _, terminateds, _, _ = self.env.step(actions)
@@ -89,14 +88,17 @@ class MainWindow(QMainWindow):
             if item not in render:
                 continue
             # value = np.random.rand(self.N)
-            if item in ['interest_rates', 'gdp']:
+            if item in ['interest_rates', 'gdp', 'affinity', 'delta_affinity']:
                 value = render[item]
             else:
                 value = np.exp(render[item])
             for x in range(self.N):
                 self.history[item][x].append(value[x])
             ui_name = f'wdt_{item}'
-            getattr(self.ui, ui_name).ShowPlot(value, self.N, self.colors)
+            if 'affinity' in item:
+                getattr(self.ui, ui_name).ShowDepthPlot(value, self.N, self.colors)
+            else:
+                getattr(self.ui, ui_name).ShowPlot(value, self.N, self.colors)
         self.update_history()
 
     def update_history(self):
@@ -105,15 +107,25 @@ class MainWindow(QMainWindow):
         getattr(self.ui, "wdt_history").ShowHistoryPlot(value, self.N, self.colors, label)
 
     def load_env(self):
-        my_checkpoint_path = "APPO_2023-11-29_00-15-52/APPO_economics_environment_74f4e_00000_0_gamma=0.9379,lr=0.0001_2023-11-29_00-15-52/checkpoint_000002/"
-        self.env = CombinedEnv()
+        my_checkpoint_path = "APPO_2023-12-21_20-00-17/APPO_combined_environment_79092_00000_0_gamma=0.9801,lr=0.0003_2023-12-21_20-00-17/checkpoint_000000/"
+        self.env = CombinedEnv(render_mode='human')
         self.policies = {}
+        self.state = {}
         self.observations, _ = self.env.reset()
-        checkpoint_path = os.path.expanduser(f"~/ray_results/{my_checkpoint_path}/policies/default_policy")
-        self.policies[f'default_policy'] = Policy.from_checkpoint(checkpoint_path)
+        # checkpoint_path = os.path.expanduser(f"~/ray_results/{my_checkpoint_path}/policies/")
+        # self.policies[f'default_policy'] = Policy.from_checkpoint(checkpoint_path)
+        for i in range(0, self.N):
+            if i > 0:
+                checkpoint_path = os.path.expanduser(f"~/ray_results/{my_checkpoint_path}/policies/agent_{i}")
+                self.policies[f'agent_{i}'] = Policy.from_checkpoint(checkpoint_path)
+
+            self.state[f'agent_{i}'] = [
+                np.zeros([256], np.float32) for _ in range(2)
+            ]
 
     def closeEvent(self, *args, **kwargs):
         self.env.close()
+        self.is_Running = False
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

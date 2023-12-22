@@ -24,8 +24,20 @@ class ItemPlotWidget(FigureCanvas):
         # Define different colors for each bar
         
 
-        labels = [f'Agent{i}' for i in range(1, N+1)]
+        labels = [f'{i}' for i in range(1, N+1)]
         self.ax.bar(labels, value, color=colors)
+        self.draw()
+
+    def ShowDepthPlot(self, value, N, colors):
+        plt.close('all')
+        for ax in self.axs:
+            ax.clear()
+
+        # Define different colors for each bar
+        # self.ax.imshow(value)
+        # self.draw()
+        # a = np.random.random((16, 16))
+        ax.imshow(value, cmap='hot', interpolation='nearest')
         self.draw()
 
     def ShowHistoryPlot(self, value, N, colors, label):
@@ -34,6 +46,6 @@ class ItemPlotWidget(FigureCanvas):
             ax.clear()
 
         for i in range(N):
-            self.ax.plot(value[i], color=colors[i%N])
+            self.ax.plot(value[i], color=colors[i%N%len(colors)])
         self.ax.set_title(label)
         self.draw()
