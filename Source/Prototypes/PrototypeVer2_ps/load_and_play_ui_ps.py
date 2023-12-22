@@ -62,18 +62,15 @@ class MainWindow(QMainWindow):
 
     def on_simulate(self):
         self.env.render(mode='human')
-        human_action = np.log(np.clip(self.currentAction / (20-self.currentAction), 1e-5, 1-1e-5))
 
         # Get actions for AI agents
         # actions = {f'agent_{i}': self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'])[0] for i in range(1, self.N)}
         # actions['agent_0'] = np.array([human_action], dtype=np.float32)
         actions = {}
-        actions['agent_0'] = np.array([human_action], dtype=np.float32)
         for i in range(self.N):
-            if i > 0:
-                action, state_out, _ = self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'], self.state[f'agent_{i}'])
-                actions[f'agent_{i}'] = action
-                self.state[f'agent_{i}'] = state_out
+            action, state_out, _ = self.policies[f'agent_{i}'].compute_single_action(self.observations[f'agent_{i}'], self.state[f'agent_{i}'])
+            actions[f'agent_{i}'] = action
+            self.state[f'agent_{i}'] = state_out
 
         # Step the environment
         self.observations, _, terminateds, _, _ = self.env.step(actions)
@@ -115,9 +112,9 @@ class MainWindow(QMainWindow):
         # checkpoint_path = os.path.expanduser(f"~/ray_results/{my_checkpoint_path}/policies/")
         # self.policies[f'default_policy'] = Policy.from_checkpoint(checkpoint_path)
         for i in range(0, self.N):
-            if i > 0:
-                checkpoint_path = os.path.expanduser(f"~/ray_results/{my_checkpoint_path}/policies/agent_{i}")
-                self.policies[f'agent_{i}'] = Policy.from_checkpoint(checkpoint_path)
+            
+            checkpoint_path = os.path.expanduser(f"~/ray_results/{my_checkpoint_path}/policies/agent_{i}")
+            self.policies[f'agent_{i}'] = Policy.from_checkpoint(checkpoint_path)
 
             self.state[f'agent_{i}'] = [
                 np.zeros([256], np.float32) for _ in range(2)
