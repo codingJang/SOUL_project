@@ -130,7 +130,7 @@ class Ui_MainWindow(object):
         self.btnPlay = QPushButton(self.centralwidget)
         self.btnPlay.setObjectName(u"btnPlay")
         self.btnPlay.setMinimumSize(QSize(0, 30))
-        self.btnPlay.setMaximumSize(QSize(50, 16777215))
+        self.btnPlay.setMaximumSize(QSize(100, 16777215))
 
         self.horizontalLayout.addWidget(self.btnPlay)
 

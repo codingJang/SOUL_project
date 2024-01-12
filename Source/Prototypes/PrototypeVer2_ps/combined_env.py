@@ -156,7 +156,7 @@ class CombinedEnv(ParallelEnv):
     def close(self):
         pass
 
-    def reset(self, *https://snu-ac-kr.zoom.us/j/94724135534?pwd=eUM3ZmRlUE1UaEl4TWtKTUQ1cWpaUT09, seed=None, options=None):
+    def reset(self, *, seed=None, options=None):
         self.agents = copy(self.possible_agents)
         self.t = 0
         # all small letter variables denote logarithmic variables

@@ -138,16 +138,16 @@ if __name__ == "__main__":
         # raise NotImplementedError(f"trial_id: {trial_id}, result.keys(): {result.keys()}")
         bool_value_1 = result["timesteps_total"] >= 10000000
         bool_value_2 = any([result["custom_metrics"][f"agent_{i}_interest_rates_max"] <= 0.001 for i in range(N)])
-        bool_value_3 = any([result['info']['learner'][f'agent_{i}']['learner_stats']['entropy'] >= 2.0 for i in range(N)])
-        return bool_value_1 or bool_value_2 or bool_value_3
+        # bool_value_3 = any([result['info']['learner'][f'agent_{i}']['learner_stats']['entropy'] >= 2.0 for i in range(N)])
+        return bool_value_1 or bool_value_2 # or bool_value_3
     
     tuner = tune.Tuner(
         "APPO",
         run_config=air.RunConfig(
-            checkpoint_config=train.CheckpointConfig(checkpoint_frequency=10),
+            checkpoint_config=train.CheckpointConfig(checkpoint_frequency=1),
             stop=stop_fn
         ),
-        tune_config=tune.TuneConfig(num_samples=-1, time_budget_s=4*60*60),
+        tune_config=tune.TuneConfig(), # num_samples=-1, time_budget_s=4*60*60),
         param_space=config.to_dict()
     )
     # there is only one trial involved.

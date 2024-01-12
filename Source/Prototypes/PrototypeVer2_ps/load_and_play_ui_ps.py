@@ -3,7 +3,7 @@ import sys
 import time
 import numpy as np
 import threading
-from Source.Prototypes.PrototypeVer2_ps.combined_env import *
+from combined_env import *
 # from combined_env import *
 from collections import deque
 from ray.rllib.policy.policy import Policy
@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
         getattr(self.ui, "wdt_history").ShowHistoryPlot(value, self.N, self.colors, label)
 
     def load_env(self):
-        my_checkpoint_path = "APPO_2023-12-21_20-00-17/APPO_combined_environment_79092_00000_0_gamma=0.9801,lr=0.0003_2023-12-21_20-00-17/checkpoint_000000/"
+        my_checkpoint_path = "/APPO_2023-12-23_00-10-39/APPO_combined_environment_4429c_00000_0_gamma=0.9041,lr=0.0001_2023-12-23_00-10-39/checkpoint_000000/"
         self.env = CombinedEnv(render_mode='human')
         self.policies = {}
         self.state = {}
@@ -128,5 +128,5 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     mainWin = MainWindow()
     mainWin.resize(1200, 600)
-    mainWin.show()
+    mainWin.showMaximized()
     sys.exit(app.exec_())
