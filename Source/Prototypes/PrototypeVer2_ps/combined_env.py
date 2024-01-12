@@ -170,7 +170,7 @@ class CombinedEnv(ParallelEnv):
         self.PREV_NET_EX = np.exp(self.std_pne * np.random.randn(self.num_agents))
         self.NET_EX = np.exp(self.std_ne * np.random.randn(self.num_agents))
         self.eco_observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX)).T
-        self.affinity = np.random.randn(self.num_agents, self.num_agents)
+        self.affinity = np.eye(self.num_agents)
         self.delta_affinity = self.affinity
         observations = {}
         for i, agent in enumerate(self.agents):
