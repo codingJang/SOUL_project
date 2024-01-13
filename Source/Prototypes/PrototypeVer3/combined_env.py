@@ -2,8 +2,8 @@ import ray
 from ray.rllib.env import MultiAgentEnv
 from ray.rllib.utils.numpy import one_hot
 import numpy as np
-from gymnasium import Dict, Box
-from functools import copy
+from gymnasium.spaces import Dict, Box
+from copy import copy
 
 
 N = 7
