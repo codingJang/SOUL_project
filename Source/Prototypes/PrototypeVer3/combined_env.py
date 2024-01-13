@@ -2,9 +2,7 @@ import ray
 from ray.rllib.env import MultiAgentEnv
 from ray.rllib.utils.numpy import one_hot
 import numpy as np
-import gymnasium as gym
-from gymnasium import Dict, Box, Discrete
-import supersuit as ss
+from gymnasium import Dict, Box
 from functools import copy
 
 
@@ -12,7 +10,6 @@ N = 7
 obs_space = Box(low=-np.inf, high=np.inf, shape=((N + 4) * N,))
 act_space = Dict({'eco':Box(low=-np.inf, high=np.inf, shape=(1,)), 'pol':Box(low=-np.inf, high=np.inf, shape=(2 * N,))})
 
-#env = ss.clip_actions_v0(env)
 
 class CombinedEnv(MultiAgentEnv):
     metadata = {
@@ -37,7 +34,7 @@ class CombinedEnv(MultiAgentEnv):
         self.std_ne = 0.1
         self.ex_int_degree = 1
         self.demand_penalty = 1
-        self.delta = 0.01 ################
+        self.delta = 0.01 
 
     def render(self, mode='human'):
         if mode == 'human':
@@ -145,9 +142,6 @@ class CombinedEnv(MultiAgentEnv):
         
         eco_actions = [actions[agent]['eco'] for agent in self.agents if 'eco' in actions[agent]]
         pol_actions = [actions[agent]['pol'] for agent in self.agents if 'pol' in actions[agent]]
-        # eco_actions.insert(0, [0])
-        # print('---', pol_actions)
-        # pol_actions.insert(0, [0] * len(pol_actions[0]))
 
         self.one_plus_int_rate = 0.20 / (1 + np.exp(-np.array(eco_actions).squeeze()))
         self.total_demand = self.dem_after_shock - self.one_plus_int_rate
@@ -181,7 +175,6 @@ class CombinedEnv(MultiAgentEnv):
         self.dem_after_shock = self.given_demand + self.one_plus_shock
         self.eco_observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX)).T
         self.GDP = np.exp(self.total_demand) + self.NET_EX
-        
         
         invites = []
         accepts = []
@@ -240,4 +233,3 @@ if __name__ == "__main__":
     # np.seterr
     my_env = CombinedEnv(render_mode='human')
     parallel_api_test(my_env, num_cycles=1_000)
-    # render_test(EconomicsEnv)
