@@ -9,6 +9,7 @@ from collections import deque
 from ray.rllib.policy.policy import Policy
 from UI.Ui_ui_mainwindow import Ui_MainWindow
 from PySide2.QtWidgets import (QApplication, QMainWindow)
+import platform
 
 
 class MainWindow(QMainWindow):
@@ -104,7 +105,10 @@ class MainWindow(QMainWindow):
         getattr(self.ui, "wdt_history").ShowHistoryPlot(value, self.N, self.colors, label)
 
     def load_env(self):
-        my_checkpoint_path = "/APPO_2023-12-23_00-10-39/APPO_combined_environment_4429c_00000_0_gamma=0.9041,lr=0.0001_2023-12-23_00-10-39/checkpoint_000000/"
+        platform_name = platform.node()
+        my_checkpoint_path = "~/ray_results/APPO_2023-12-23_00-10-39/APPO_combined_environment_4429c_00000_0_gamma=0.9041,lr=0.0001_2023-12-23_00-10-39/checkpoint_000000/"
+        if platform.node() == "jang-yejun-ui-MacBookAir.local":
+            my_checkpoint_path = "~/Desktop/checkpoint_000002/"
         self.env = CombinedEnv(render_mode='human')
         self.policies = {}
         self.state = {}
@@ -113,7 +117,7 @@ class MainWindow(QMainWindow):
         # self.policies[f'default_policy'] = Policy.from_checkpoint(checkpoint_path)
         for i in range(0, self.N):
             
-            checkpoint_path = os.path.expanduser(f"~/ray_results/{my_checkpoint_path}/policies/agent_{i}")
+            checkpoint_path = os.path.expanduser(f"{my_checkpoint_path}/policies/agent_{i}")
             self.policies[f'agent_{i}'] = Policy.from_checkpoint(checkpoint_path)
 
             self.state[f'agent_{i}'] = [

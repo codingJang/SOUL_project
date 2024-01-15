@@ -28,13 +28,14 @@ class CombinedEnv(MultiAgentEnv):
         self.STD_ETA = 0.03
         self.std_gd = 0.1
         self.std_ops = 0.1
-        self.std_ppl = 0.1
-        self.std_pl = 0.1
+        self.std_ppl = 0.01
+        self.std_pl = 0.01
         self.std_pne = 0.1
         self.std_ne = 0.1
+        self.shock_lvl = 0.0
         self.ex_int_degree = 1
         self.demand_penalty = 1
-        self.delta = 0.01 
+        self.delta = 0.01
 
     def render(self, mode='human'):
         if mode == 'human':
@@ -166,13 +167,13 @@ class CombinedEnv(MultiAgentEnv):
         self.PREV_NET_EX = self.NET_EX
         self.NET_EX = self.EX - self.IM
         self.prev_price_lvl = self.price_lvl
-        self.price_lvl = np.log(np.exp(self.price_lvl)) + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
+        self.price_lvl = np.log(np.exp(self.price_lvl)) - self.one_plus_int_rate # + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
         self.price_lvl = (self.price_lvl - np.mean(self.price_lvl)) / np.std(self.price_lvl)
         self.one_plus_inf_rate = self.price_lvl - self.prev_price_lvl
         self.given_demand = self.given_demand - self.demand_penalty * self.one_plus_inf_rate
         self.ETA = self.STD_ETA * np.random.randn(self.num_agents)
         self.one_plus_shock = np.log(np.maximum(1e-10, 1+(self.rho * (np.exp(self.one_plus_shock)-1) + self.ETA)))
-        self.dem_after_shock = self.given_demand + self.one_plus_shock
+        self.dem_after_shock = self.given_demand + self.shock_lvl * self.one_plus_shock
         self.eco_observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX)).T
         self.GDP = np.exp(self.total_demand) + self.NET_EX
         
