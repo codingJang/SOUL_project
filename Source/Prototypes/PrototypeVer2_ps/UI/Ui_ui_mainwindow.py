@@ -72,10 +72,10 @@ class Ui_MainWindow(object):
         self.groupBox_4.setObjectName(u"groupBox_4")
         self.horizontalLayout_7 = QHBoxLayout(self.groupBox_4)
         self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
-        self.wdt_dem_after_shock = ItemPlotWidget(self.groupBox_4)
-        self.wdt_dem_after_shock.setObjectName(u"wdt_dem_after_shock")
+        self.wdt_one_plus_gdp_growth_rate = ItemPlotWidget(self.groupBox_4)
+        self.wdt_one_plus_gdp_growth_rate.setObjectName(u"wdt_one_plus_gdp_growth_rate")
 
-        self.horizontalLayout_7.addWidget(self.wdt_dem_after_shock)
+        self.horizontalLayout_7.addWidget(self.wdt_one_plus_gdp_growth_rate)
 
 
         self.horizontalLayout_3.addWidget(self.groupBox_4)
@@ -96,10 +96,10 @@ class Ui_MainWindow(object):
         self.groupBox_6.setObjectName(u"groupBox_6")
         self.horizontalLayout_8 = QHBoxLayout(self.groupBox_6)
         self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
-        self.wdt_delta_price_lvl = ItemPlotWidget(self.groupBox_6)
-        self.wdt_delta_price_lvl.setObjectName(u"wdt_delta_price_lvl")
+        self.wdt_one_plus_inf_rate = ItemPlotWidget(self.groupBox_6)
+        self.wdt_one_plus_inf_rate.setObjectName(u"wdt_one_plus_inf_rate")
 
-        self.horizontalLayout_8.addWidget(self.wdt_delta_price_lvl)
+        self.horizontalLayout_8.addWidget(self.wdt_one_plus_inf_rate)
 
 
         self.horizontalLayout_3.addWidget(self.groupBox_6)
@@ -184,9 +184,9 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Simulation", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Interest Rate:", None))
         self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"GDP:", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Dem_After_Shock:", None))
-        self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"Price_LVL:", None))
-        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Delta_Price_LVL:", None))
+        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"GDP growth rate:", None))
+        self.groupBox_7.setTitle(QCoreApplication.translate("MainWindow", u"Price level:", None))
+        self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Inflation rate:", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Show:", None))
         self.btnPlay.setText(QCoreApplication.translate("MainWindow", u"Pause", None))
         self.groupBox_9.setTitle(QCoreApplication.translate("MainWindow", u"Affinity:", None))

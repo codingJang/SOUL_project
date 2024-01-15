@@ -57,8 +57,8 @@ class CombinedEnv(ParallelEnv):
         self.render_mode = render_mode
         self.rho = 0.8
         self.STD_ETA = 0.03
-        self.std_gd = 0.1
-        self.std_ops = 0.1
+        self.std_pgdp = 0.1
+        self.std_gdp = 0.1
         self.std_ppl = 0.1
         self.std_pl = 0.1
         self.std_pne = 0.1
@@ -66,6 +66,10 @@ class CombinedEnv(ParallelEnv):
         self.ex_int_degree = 1
         self.demand_penalty = 1
         self.delta = 0.01
+        self.tau_values = np.array([0.95, 0.90, 0.85, 0.80, 0.75, 0.70, 0.65])
+        self.kappa = 100
+        self.inf_target = 0.02
+        self.constant = 0.01
     
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
@@ -91,7 +95,7 @@ class CombinedEnv(ParallelEnv):
             print("Current timestep:", self.t)
 
             print("\nObservables:")
-            observable_vars = ['dem_after_shock', 'prev_price_lvl', 'price_lvl']
+            observable_vars = ['gdp', 'one_plus_gdp_growth_rate', 'price_lvl', 'one_plus_inf_rate']
             for var in observable_vars:
                 print(f"{var.upper()}: {np.exp(getattr(self, var))}")
             print("PREV_NET_EX:", self.PREV_NET_EX)
@@ -103,17 +107,14 @@ class CombinedEnv(ParallelEnv):
         print("Current timestep:", self.t)
         print("Agents:", self.agents)
         print("INT_RATE:", np.exp(self.one_plus_int_rate)-1)
-        print("GDP:", self.GDP)
 
         print("\nObservables:")
-        observable_vars = ['dem_after_shock', 'prev_price_lvl', 'price_lvl']
+        observable_vars = ['gdp', 'one_plus_gdp_growth_rate', 'price_lvl', 'one_plus_inf_rate']
         for var in observable_vars:
             print(f"{var.upper()}: {np.exp(getattr(self, var))}")
-        print("PREV_NET_EX:", self.PREV_NET_EX)
 
         print("\nHidden Variables:")
-        print("ETA:", self.ETA)
-        hidden_vars = ['one_plus_shock', 'given_demand', 'dem_after_shock', 'total_demand', 'one_plus_inf_rate']
+        hidden_vars = ['total_demand']
         for var in hidden_vars:
             print(f"{var.upper()}: {np.exp(getattr(self, var))}")
         
@@ -136,10 +137,10 @@ class CombinedEnv(ParallelEnv):
             'ts': self.t,
             'agents': self.agents,
             'interest_rates': np.exp(self.one_plus_int_rate)-1,
-            'gdp': self.GDP,
-            'dem_after_shock': self.dem_after_shock, 
-            'delta_price_lvl': self.price_lvl - self.prev_price_lvl, 
+            'gdp': self.gdp,
+            'one_plus_gdp_growth_rate': self.one_plus_gdp_growth_rate,
             'price_lvl': self.price_lvl,
+            'one_plus_inf_rate': self.price_lvl - self.prev_price_lvl, 
             'affinity': self.affinity,
             'delta_affinity': self.delta_affinity
         }
@@ -148,8 +149,8 @@ class CombinedEnv(ParallelEnv):
 
     def _render_array(self):
         # Concatenate all relevant arrays into a single numpy array for more technical analysis
-        state_arrays = [self.given_demand, self.one_plus_shock, self.one_plus_inf_rate, self.price_lvl, 
-                        self.dem_after_shock, self.nom_exchange_rate, self.real_exchange_rate, 
+        state_arrays = [self.gdp, self.one_plus_inf_rate, self.price_lvl, 
+                        self.nom_exchange_rate, self.real_exchange_rate, 
                         self.TRADE_COEFF, self.EX, self.IM, self.NET_EX, self.price_lvl]
         return np.concatenate([arr.flatten() for arr in state_arrays])
     
@@ -162,14 +163,16 @@ class CombinedEnv(ParallelEnv):
         # all small letter variables denote logarithmic variables
         # all capital letter variables are non-logarithmetic variables
         # ex: self.one_plus_inf_rate = ln(1 + (INFLATION_RATE))
-        self.given_demand = self.std_gd * np.random.randn(self.num_agents)
-        self.one_plus_shock = self.std_ops * np.random.randn(self.num_agents)
-        self.dem_after_shock = self.given_demand + self.one_plus_shock
+        self.prev_gdp = self.std_pgdp * np.random.randn(self.num_agents)
+        self.gdp = self.std_gdp * np.random.randn(self.num_agents)
+        self.GDP = np.exp(self.gdp)
+        self.one_plus_gdp_growth_rate = self.gdp - self.prev_gdp
         self.prev_price_lvl = self.std_ppl * np.random.randn(self.num_agents)
         self.price_lvl = self.std_pl * np.random.randn(self.num_agents)
+        self.one_plus_inf_rate = self.price_lvl - self.prev_price_lvl
         self.PREV_NET_EX = np.exp(self.std_pne * np.random.randn(self.num_agents))
         self.NET_EX = np.exp(self.std_ne * np.random.randn(self.num_agents))
-        self.eco_observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX)).T
+        self.eco_observation = np.vstack((self.gdp, self.one_plus_gdp_growth_rate, self.price_lvl, self.one_plus_inf_rate)).T
         self.affinity = np.eye(self.num_agents)
         self.delta_affinity = self.affinity
         observations = {}
@@ -189,39 +192,42 @@ class CombinedEnv(ParallelEnv):
         # pol_actions.insert(0, [0] * len(pol_actions[0]))
 
         self.one_plus_int_rate = 0.20 / (1 + np.exp(-np.array(eco_actions).squeeze()))
-        self.total_demand = self.dem_after_shock - self.one_plus_int_rate
+        self.total_demand = self.gdp - self.one_plus_int_rate
         price_diff = self.price_lvl.reshape(-1, 1) - self.price_lvl.reshape(1, -1)
         int_rate_diff = self.one_plus_int_rate.reshape(-1, 1) - self.one_plus_int_rate.reshape(1, -1)
         self.nom_exchange_rate = price_diff - self.ex_int_degree * int_rate_diff
         self.real_exchange_rate = - self.ex_int_degree * int_rate_diff
+        self.FOR_EXP = (1-self.tau_values) * np.exp(self.total_demand)
+
         NUM = np.exp(self.real_exchange_rate).T
         DEN = np.sum(NUM, axis=0, keepdims=True)
         self.TRADE_COEFF = NUM / DEN
         TEMP = np.copy(self.TRADE_COEFF)
         np.fill_diagonal(TEMP, 0)
-        self.EX = TEMP.T @ np.exp(self.total_demand)
+        self.EX = TEMP.T @ self.FOR_EXP
         NUM_STAR = np.exp(self.real_exchange_rate)
         DEN_STAR = np.sum(NUM_STAR, axis=1, keepdims=True)
         self.TRADE_COEFF_STAR = NUM_STAR / DEN_STAR
         TEMP_STAR = np.copy(self.TRADE_COEFF_STAR)
         np.fill_diagonal(TEMP_STAR, 0)
-        self.EX_STAR = TEMP_STAR @ np.exp(self.total_demand)
+        self.EX_STAR = TEMP_STAR @ self.FOR_EXP
         assert (self.EX == self.EX_STAR).all(), f"self.EX=={self.EX} self.EX_STAR={self.EX_STAR}"
-        self.IM = np.sum(TEMP, axis=1) * np.exp(self.total_demand)
+        self.IM = np.sum(TEMP, axis=1) * self.FOR_EXP
         self.PREV_NET_EX = self.NET_EX
         self.NET_EX = self.EX - self.IM
         self.prev_price_lvl = self.price_lvl
         self.price_lvl = np.log(np.exp(self.price_lvl)) + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
         self.price_lvl = (self.price_lvl - np.mean(self.price_lvl)) / np.std(self.price_lvl)
         self.one_plus_inf_rate = self.price_lvl - self.prev_price_lvl
-        self.given_demand = self.given_demand - self.demand_penalty * self.one_plus_inf_rate
-        self.ETA = self.STD_ETA * np.random.randn(self.num_agents)
-        self.one_plus_shock = np.log(np.maximum(1e-10, 1+(self.rho * (np.exp(self.one_plus_shock)-1) + self.ETA)))
-        self.dem_after_shock = self.given_demand + self.one_plus_shock
-        self.eco_observation = np.vstack((self.dem_after_shock, self.prev_price_lvl, self.price_lvl, self.PREV_NET_EX)).T
+        self.prev_gdp = self.gdp
         self.GDP = np.exp(self.total_demand) + self.NET_EX
+        self.gdp = np.log(self.GDP)
+        self.gdp = (self.gdp - np.mean(self.gdp) + self.constant * self.t) / np.std(self.gdp)
+        self.one_plus_gdp_growth_rate = self.gdp - self.prev_gdp
+        self.eco_observation = np.vstack((self.gdp, self.one_plus_gdp_growth_rate, self.price_lvl, self.one_plus_inf_rate)).T
+        self.eco_reward = (np.exp(self.one_plus_gdp_growth_rate)-1) - self.kappa * np.square(np.exp(self.one_plus_inf_rate)-1 - self.inf_target)
         
-        
+
         invites = []
         accepts = []
         softmax = lambda x : np.exp(x) / np.sum(np.exp(x), axis=0)
@@ -253,7 +259,7 @@ class CombinedEnv(ParallelEnv):
 
         print(self.affinity)
         print(self.GDP)
-        rewards = self.affinity @ self.GDP
+        rewards = self.affinity @ self.eco_reward
         rewards = dict(zip(self.agents, list(rewards)))
         terminations = {agent:False for agent in self.agents}
         truncations = {agent:False for agent in self.agents}

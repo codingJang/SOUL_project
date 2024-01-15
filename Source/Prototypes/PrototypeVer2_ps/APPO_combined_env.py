@@ -138,8 +138,8 @@ if __name__ == "__main__":
         # raise NotImplementedError(f"trial_id: {trial_id}, result.keys(): {result.keys()}")
         bool_value_1 = result["timesteps_total"] >= 10000000
         bool_value_2 = any([result["custom_metrics"][f"agent_{i}_interest_rates_max"] <= 0.001 for i in range(N)])
-        bool_value_3 = any([result['info']['learner'][f'agent_{i}']['learner_stats']['entropy'] >= 100.0 for i in range(N)])
-        return bool_value_1 or bool_value_2 or bool_value_3
+        # bool_value_3 = any([result['info']['learner'][f'agent_{i}']['learner_stats']['entropy'] >= 100.0 for i in range(N)])
+        return bool_value_1 or bool_value_2 # or bool_value_3
     
     tuner = tune.Tuner(
         "APPO",
