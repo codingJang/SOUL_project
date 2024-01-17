@@ -40,7 +40,7 @@ class CombinedEnvCallbacks(DefaultCallbacks):
         # )
         # Create lists to store angles in
         for i in range(N):
-            episode.custom_metrics[f"agent_{i}_GDPs"] = []
+            episode.custom_metrics[f"agent_{i}_rewards"] = []
             episode.custom_metrics[f"agent_{i}_interest_rates"] = []
 
     def on_episode_step(
@@ -81,7 +81,7 @@ class CombinedEnvCallbacks(DefaultCallbacks):
         # episode.custom_metrics["agent_1_rewards"] = np.sum(episode.user_data["agent_1_rewards"])
         # raise TypeError(f"What's wrong? type = {episode.__dict__.keys()}")
         for agent_id, collector in episode._agent_collectors.items():
-            episode.custom_metrics[agent_id+"_GDPs"].append(np.sum(collector.buffers['rewards']))
+            episode.custom_metrics[agent_id+"_rewards"].append(np.sum(collector.buffers['rewards']))
             assert np.all(0.20 / (1 + np.exp(-np.array(collector.buffers['actions']))) >= 0), f"{0.20 / (1 + np.exp(-np.array(collector.buffers['actions'])))}"
             episode.custom_metrics[agent_id+"_interest_rates"].append(np.mean(0.20 / (1 + np.exp(-np.array(collector.buffers['actions'])))))
 
@@ -100,8 +100,8 @@ if __name__ == "__main__":
     register_env(env_name, lambda config: ParallelPettingZooEnv(env))
     config = (
         APPOConfig()
-        .training(lr=tune.loguniform(1e-5, 1e-3), gamma=tune.uniform(0.9, 0.9999), clip_param=0.2, train_batch_size=512)
-        .environment(env=env_name, clip_actions=True)                                                                                                                                               
+        .training(lr=tune.uniform(2e-6, 2e-5), gamma=tune.uniform(0.9, 0.9999), clip_param=0.2, train_batch_size=512)
+        .environment(env=env_name, clip_actions=True)
         .rollouts(num_rollout_workers=7 if platform.node()=="jang-yejun-ui-MacBookAir.local" else 84, recreate_failed_workers=True, restart_failed_sub_environments=True)
         .framework(framework="torch")
         .resources(num_learner_workers=7 if platform.node()=="jang-yejun-ui-MacBookAir.local" else 84, num_cpus_for_local_worker=1)
@@ -116,7 +116,7 @@ if __name__ == "__main__":
         )
         .debugging(
             log_level="DEBUG"
-        )  # TODO: change to ERROR to match pistonball example
+        )
         .callbacks(CombinedEnvCallbacks)
         # .rollouts(enable_connectors=False)
         # .reporting(keep_per_episode_custom_metrics=True)
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     """
     def stop_fn(trial_id: str, result: dict) -> bool:
         # raise NotImplementedError(f"trial_id: {trial_id}, result.keys(): {result.keys()}")
-        bool_value_1 = result["timesteps_total"] >= 10000000
+        bool_value_1 = result["timesteps_total"] >= 1000000
         bool_value_2 = any([result["custom_metrics"][f"agent_{i}_interest_rates_max"] <= 0.001 for i in range(N)])
         # bool_value_3 = any([result['info']['learner'][f'agent_{i}']['learner_stats']['entropy'] >= 100.0 for i in range(N)])
         return bool_value_1 or bool_value_2 # or bool_value_3
