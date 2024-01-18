@@ -56,7 +56,6 @@ class CombinedEnv(ParallelEnv):
         super().__init__()
         self.render_mode = render_mode
         self.rho = 0.8
-        self.STD_ETA = 0.03
         self.std_pgdp = 0.1
         self.std_gdp = 0.1
         self.std_ppl = 0.1
@@ -65,7 +64,8 @@ class CombinedEnv(ParallelEnv):
         self.std_ne = 0.1
         self.ex_int_degree = 1
         self.demand_penalty = 1
-        self.delta = 0.01
+        self.delta = 0.00
+        # self.delta = 0.01
         self.tau_values = np.array([0.95, 0.90, 0.85, 0.80, 0.75, 0.70, 0.65])
         self.kappa = 100
         self.inf_target = 0.02
@@ -217,12 +217,12 @@ class CombinedEnv(ParallelEnv):
         self.NET_EX = self.EX - self.IM
         self.prev_price_lvl = self.price_lvl
         self.price_lvl = np.log(np.exp(self.price_lvl)) + np.log(np.maximum(1e-10, 1 + self.NET_EX/np.exp(self.total_demand))) - self.one_plus_int_rate
-        self.price_lvl = (self.price_lvl - np.mean(self.price_lvl)) / np.std(self.price_lvl)
+        # self.price_lvl = (self.price_lvl - np.mean(self.price_lvl)) / np.std(self.price_lvl)
         self.one_plus_inf_rate = self.price_lvl - self.prev_price_lvl
         self.prev_gdp = self.gdp
         self.GDP = np.exp(self.total_demand) + self.NET_EX
         self.gdp = np.log(self.GDP)
-        self.gdp = (self.gdp - np.mean(self.gdp) + self.constant * self.t) / np.std(self.gdp)
+        # self.gdp = (self.gdp - np.mean(self.gdp) + self.constant * self.t) / np.std(self.gdp)
         self.one_plus_gdp_growth_rate = self.gdp - self.prev_gdp
         self.eco_observation = np.vstack((self.gdp, self.one_plus_gdp_growth_rate, self.price_lvl, self.one_plus_inf_rate)).T
         self.eco_reward = (np.exp(self.one_plus_gdp_growth_rate)-1) - self.kappa * np.square(np.exp(self.one_plus_inf_rate)-1 - self.inf_target)
