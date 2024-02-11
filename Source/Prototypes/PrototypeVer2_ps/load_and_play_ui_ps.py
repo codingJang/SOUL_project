@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
         getattr(self.ui, "wdt_history").ShowHistoryPlot(value, self.N, self.colors, label)
 
     def load_env(self):
-        my_checkpoint_path = "~/ray_results/APPO_2023-12-23_00-10-39/APPO_combined_environment_4429c_00000_0_gamma=0.9041,lr=0.0001_2023-12-23_00-10-39/checkpoint_000000"
+        my_checkpoint_path = "~/ray_results/APPO_2024-01-17_12-48-34/APPO_combined_environment_b9dfc_00000_0_gamma=0.9013,lr=0.0000_2024-01-17_12-48-34/checkpoint_000003"
         if platform.node() == "jang-yejun-ui-MacBookAir.local":
             my_checkpoint_path = "~/Desktop/checkpoint_000002"
         self.env = CombinedEnv(render_mode='human')
