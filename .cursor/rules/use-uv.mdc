@@ -1,0 +1,34 @@
+---
+description: Install Python packages, access Python CLI, run python code and scripts, execute Python commands, and manage Python environments. Use uv run for all Python execution instead of direct python commands.
+
+alwaysApply: true
+---
+
+# Python Package Management with uv
+
+Use uv exclusively for Python package management in all projects.
+
+## Package Management Commands
+
+- All Python dependencies **must be installed, synchronized, and locked** using uv
+- Never use pip, pip-tools, poetry, or conda directly for dependency management
+
+Use these commands
+
+- Install dependencies: `uv add <package>`
+- Remove dependencies: `uv remove <package>`
+- Sync dependencies: `uv sync`
+
+## Running Python Code
+
+Prefer activating the venv using `source .venv/bin/activate` at the project root directory and then
+- Run the Python script with `python <script-name>.py`
+If the Python packages are not found for some reason,
+- Run a Python script with `uv run <script-name>.py`
+If it's still not found,
+- install it using `uv add <package>`
+
+## Misc
+
+- Run Python tools like Pytest with `uv run pytest` or `uv run ruff`
+- Launch a Python repl with `uv run python`

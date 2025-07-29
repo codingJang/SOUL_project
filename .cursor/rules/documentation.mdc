@@ -1,0 +1,11 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+- Commit regularly (ask the user where to commit if you're not sure about which branch you should commit to)
+- Organize documentation (README.md, LICENSE.md, CITATION.md etc.) in docs/
+- If the documentation is folder specific, follow the current folder structure
+- After making code changes, always update the documentation.
+- Keep a separate CHANGELOG.md, and avoid mentioning directly about what "changed" in the READMEs. Only document about the current state.
