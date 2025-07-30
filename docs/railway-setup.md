@@ -20,9 +20,14 @@ This guide will help you deploy your FastAPI SOUL Project webapp to Railway.
 ### 2. Environment Configuration
 
 Railway should automatically:
-- Detect Python and install dependencies from `requirements.txt`
+- Detect Python and install dependencies from `requirements-railway.txt` (cross-platform compatible)
 - Use the `Procfile` to start the application
 - Set the PORT environment variable
+
+**Important**: We use `requirements-railway.txt` instead of `requirements.txt` because:
+- It removes platform-specific hashes that cause macOS → Linux compatibility issues
+- It properly handles NVIDIA CUDA dependencies for Linux x86_64
+- It allows pip to select the correct wheels for Railway's Linux environment
 
 ### 3. Domain Access
 
@@ -39,18 +44,24 @@ After deployment:
 
 ## Important Notes
 
+- **Platform Compatibility**: This project was developed on macOS but deploys to Linux. We've created `requirements-railway.txt` without platform-specific hashes to ensure compatibility
+- **CUDA Support**: PyTorch will automatically use CUDA if available on Railway, falling back to CPU
 - **Model Files**: Ensure your AI model checkpoints are included in your repository or uploaded separately
 - **Environment Variables**: Set any required environment variables in Railway's dashboard
 - **Build Time**: Initial deployment may take 5-10 minutes due to large dependencies (PyTorch, Ray, etc.)
-- **Memory Usage**: Your app uses AI models, so ensure adequate memory allocation
+- **Memory Usage**: Your app uses AI models, so ensure adequate memory allocation (recommend 2GB+ RAM)
 
 ## Troubleshooting
 
 If deployment fails:
 1. Check Railway build logs for errors
-2. Verify all dependencies are in `requirements.txt`
+2. Verify all dependencies are in `requirements-railway.txt`
 3. Ensure `src/webapp.py` path is correct
 4. Check that all import paths work correctly
+5. **Platform Issues**: If you see hash mismatch errors, regenerate `requirements-railway.txt` with:
+   ```bash
+   uv export --format requirements-txt --no-hashes --output-file requirements-railway.txt
+   ```
 
 ## Alternative Platforms
 

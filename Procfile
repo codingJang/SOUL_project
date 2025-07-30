@@ -1,1 +1,1 @@
-web: pip install -r requirements-railway.txt && uvicorn src.webapp:app --host 0.0.0.0 --port $PORT 
+web: uv sync && uvicorn src.webapp:app --host 0.0.0.0 --port $PORT 
