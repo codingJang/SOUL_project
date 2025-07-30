@@ -16,6 +16,16 @@ class SOULApp {
             checkpoint_loaded: false
         };
         
+        // Training state
+        this.trainingState = {
+            is_training: false,
+            iteration: 0,
+            timesteps_total: 0,
+            episode_reward_mean: 0.0,
+            progress_percentage: 0.0,
+            eta_hours: 0.0
+        };
+        
         // Store time series data for real-time charts
         this.timeSeriesData = {
             'interest_rates': [],
@@ -24,8 +34,19 @@ class SOULApp {
             'affinity': []
         };
         
+        // Store training metrics data
+        this.trainingMetrics = {
+            'iterations': [],
+            'timesteps': [],
+            'rewards': [],
+            'agent_metrics': {}
+        };
+        
         // Speed multiplier for simulation
         this.speedMultiplier = 1;
+        
+        // Current active tab
+        this.activeTab = 'loadplay';
         
         this.initializeApp();
     }
@@ -37,11 +58,13 @@ class SOULApp {
         this.loadCheckpoints();
         this.updateHistoryChart(); // Initialize historical chart
         this.connectWebSocket();
+        this.setupTabSwitching();
     }
 
     initializeUI() {
-        // Get UI elements
+        // Get UI elements for simulation (Load & Play tab)
         this.elements = {
+            // Simulation elements
             checkpointSelect: document.getElementById('checkpointSelect'),
             historySelect: document.getElementById('historySelect'),
             loadBtn: document.getElementById('loadBtn'),
@@ -50,10 +73,31 @@ class SOULApp {
             speedSelect: document.getElementById('speedSelect'),
             connectionStatus: document.getElementById('connectionStatus'),
             stepCounter: document.getElementById('stepCounter'),
-            simulationStatus: document.getElementById('simulationStatus')
+            simulationStatus: document.getElementById('simulationStatus'),
+            
+            // Training elements
+            startTrainingBtn: document.getElementById('startTrainingBtn'),
+            stopTrainingBtn: document.getElementById('stopTrainingBtn'),
+            resetTrainingBtn: document.getElementById('resetTrainingBtn'),
+            trainingStatus: document.getElementById('trainingStatus'),
+            trainingIteration: document.getElementById('trainingIteration'),
+            trainingTimesteps: document.getElementById('trainingTimesteps'),
+            trainingLogs: document.getElementById('trainingLogs'),
+            
+            // Hyperparameter controls
+            lrMin: document.getElementById('lrMin'),
+            lrMax: document.getElementById('lrMax'),
+            gammaMin: document.getElementById('gammaMin'),
+            gammaMax: document.getElementById('gammaMax'),
+            batchSize: document.getElementById('batchSize'),
+            clipParam: document.getElementById('clipParam'),
+            maxTimesteps: document.getElementById('maxTimesteps'),
+            numSamples: document.getElementById('numSamples'),
+            timeBudgetHours: document.getElementById('timeBudgetHours'),
+            checkpointFreq: document.getElementById('checkpointFreq')
         };
 
-        // Add event listeners
+        // Add event listeners for simulation controls
         this.elements.loadBtn.addEventListener('click', () => this.loadCheckpoint());
         this.elements.playBtn.addEventListener('click', () => this.startSimulation());
         this.elements.pauseBtn.addEventListener('click', () => this.pauseSimulation());
@@ -62,6 +106,49 @@ class SOULApp {
         this.elements.checkpointSelect.addEventListener('change', () => {
             this.elements.loadBtn.disabled = !this.elements.checkpointSelect.value;
         });
+        
+        // Add event listeners for training controls
+        this.elements.startTrainingBtn.addEventListener('click', () => this.startTraining());
+        this.elements.stopTrainingBtn.addEventListener('click', () => this.stopTraining());
+        this.elements.resetTrainingBtn.addEventListener('click', () => this.resetTraining());
+    }
+
+    setupTabSwitching() {
+        // Handle tab switching
+        const tabButtons = document.querySelectorAll('#mainTabs button[data-bs-toggle="pill"]');
+        tabButtons.forEach(button => {
+            button.addEventListener('shown.bs.tab', (event) => {
+                const tabId = event.target.getAttribute('aria-controls');
+                this.activeTab = tabId.replace('-content', '');
+                console.log('Switched to tab:', this.activeTab);
+                
+                // Resize charts when tab becomes visible
+                setTimeout(() => {
+                    this.resizeChartsForActiveTab();
+                }, 100);
+            });
+        });
+    }
+
+    resizeChartsForActiveTab() {
+        // Resize charts in the currently active tab
+        if (this.activeTab === 'loadplay') {
+            Object.keys(this.charts).forEach(chartId => {
+                if (['interestRatesChart', 'gdpChart', 'priceLvlChart', 'historyChart'].includes(chartId)) {
+                    if (this.charts[chartId]) {
+                        this.charts[chartId].resize();
+                    }
+                }
+            });
+        } else if (this.activeTab === 'train') {
+            Object.keys(this.charts).forEach(chartId => {
+                if (['trainingProgressChart', 'rewardChart', 'agentMetricsChart'].includes(chartId)) {
+                    if (this.charts[chartId]) {
+                        this.charts[chartId].resize();
+                    }
+                }
+            });
+        }
     }
 
     async loadColorScheme() {
@@ -126,77 +213,185 @@ class SOULApp {
             }
         };
 
-        // Initialize real-time time series charts (excluding affinity matrix)
-        const timeSeriesChartIds = ['interestRatesChart', 'gdpChart', 'priceLvlChart'];
-        timeSeriesChartIds.forEach(chartId => {
-            const ctx = document.getElementById(chartId).getContext('2d');
-            
-            // Create datasets for each agent using consistent colors
-            const datasets = [];
-            for (let i = 0; i < this.colors.length; i++) {
-                datasets.push({
-                    label: `Agent ${i}`,
-                    data: [],
-                    borderColor: this.colors[i],
-                    backgroundColor: this.colors[i] + '20',
-                    tension: 0,
-                    stepped: false, // Ensure linear interpolation
-                    pointRadius: 1
+        // Initialize simulation charts (Load & Play tab)
+        const simulationChartIds = ['interestRatesChart', 'gdpChart', 'priceLvlChart'];
+        simulationChartIds.forEach(chartId => {
+            const canvas = document.getElementById(chartId);
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                
+                // Create datasets for each agent using consistent colors
+                const datasets = [];
+                for (let i = 0; i < this.colors.length; i++) {
+                    datasets.push({
+                        label: `Agent ${i}`,
+                        data: [],
+                        borderColor: this.colors[i],
+                        backgroundColor: this.colors[i] + '20',
+                        tension: 0,
+                        stepped: false, // Ensure linear interpolation
+                        pointRadius: 1
+                    });
+                }
+                
+                this.charts[chartId] = new Chart(ctx, {
+                    ...realtimeChartConfig,
+                    data: { datasets }
                 });
             }
-            
-            this.charts[chartId] = new Chart(ctx, {
-                ...realtimeChartConfig,
-                data: { datasets }
-            });
         });
+
+        // Initialize training charts (Train tab)
+        this.initializeTrainingCharts();
 
         // Initialize affinity matrix table
         this.initializeAffinityTable();
 
         // Initialize history chart
-        const historyCtx = document.getElementById('historyChart').getContext('2d');
-        this.charts.historyChart = new Chart(historyCtx, {
-            type: 'line',
-            data: {
-                datasets: []
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: {
-                    duration: 0
+        const historyCanvas = document.getElementById('historyChart');
+        if (historyCanvas) {
+            const historyCtx = historyCanvas.getContext('2d');
+            this.charts.historyChart = new Chart(historyCtx, {
+                type: 'line',
+                data: {
+                    datasets: []
                 },
-                scales: {
-                    x: {
-                        type: 'linear',
-                        position: 'bottom',
-                        title: {
-                            display: true,
-                            text: 'Time Step'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'Time Step'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
                         }
                     },
-                    y: {
-                        title: {
+                    plugins: {
+                        legend: {
                             display: true,
-                            text: 'Value'
+                            position: 'top'
                         }
                     }
+                }
+            });
+        }
+    }
+
+    initializeTrainingCharts() {
+        // Training Progress Chart
+        const trainingProgressCanvas = document.getElementById('trainingProgressChart');
+        if (trainingProgressCanvas) {
+            const ctx = trainingProgressCanvas.getContext('2d');
+            this.charts.trainingProgressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Training Progress (%)',
+                        data: [],
+                        borderColor: '#28a745',
+                        backgroundColor: '#28a74520',
+                        tension: 0.1
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Iteration' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Progress (%)' },
+                            min: 0,
+                            max: 100
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
+
+        // Reward Chart
+        const rewardCanvas = document.getElementById('rewardChart');
+        if (rewardCanvas) {
+            const ctx = rewardCanvas.getContext('2d');
+            this.charts.rewardChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Episode Reward Mean',
+                        data: [],
+                        borderColor: '#007bff',
+                        backgroundColor: '#007bff20',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Iteration' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Reward' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Agent Metrics Chart
+        const agentMetricsCanvas = document.getElementById('agentMetricsChart');
+        if (agentMetricsCanvas) {
+            const ctx = agentMetricsCanvas.getContext('2d');
+            this.charts.agentMetricsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Timesteps Total',
+                        data: [],
+                        borderColor: '#ffc107',
+                        backgroundColor: '#ffc10720',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Iteration' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Timesteps' }
+                        }
+                    }
+                }
+            });
+        }
     }
 
     initializeAffinityTable() {
         // Table is already initialized in HTML, just store reference
         this.affinityTable = document.getElementById('affinityTable');
     }
+
+    // === SIMULATION METHODS (Load & Play Tab) ===
 
     async loadCheckpoints() {
         try {
@@ -316,6 +511,97 @@ class SOULApp {
         }
     }
 
+    // === TRAINING METHODS (Train Tab) ===
+
+    async startTraining() {
+        try {
+            // Collect hyperparameters from form
+            const config = {
+                lr_min: parseFloat(this.elements.lrMin.value),
+                lr_max: parseFloat(this.elements.lrMax.value),
+                gamma_min: parseFloat(this.elements.gammaMin.value),
+                gamma_max: parseFloat(this.elements.gammaMax.value),
+                clip_param: parseFloat(this.elements.clipParam.value),
+                train_batch_size: parseInt(this.elements.batchSize.value),
+                max_timesteps: parseInt(this.elements.maxTimesteps.value),
+                num_samples: parseInt(this.elements.numSamples.value),
+                time_budget_hours: parseFloat(this.elements.timeBudgetHours.value),
+                checkpoint_frequency: parseInt(this.elements.checkpointFreq.value)
+            };
+
+            const response = await fetch('/start_training', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.trainingState.is_training = true;
+                this.elements.startTrainingBtn.disabled = true;
+                this.elements.stopTrainingBtn.disabled = false;
+                this.updateTrainingStatus();
+                this.clearTrainingCharts();
+                this.showNotification('Training started', 'success');
+            } else {
+                this.showNotification('Error starting training', 'error');
+            }
+        } catch (error) {
+            console.error('Error starting training:', error);
+            this.showNotification('Error starting training', 'error');
+        }
+    }
+
+    async stopTraining() {
+        try {
+            const response = await fetch('/stop_training', { method: 'POST' });
+            const result = await response.json();
+            
+            if (result.success) {
+                this.trainingState.is_training = false;
+                this.elements.startTrainingBtn.disabled = false;
+                this.elements.stopTrainingBtn.disabled = true;
+                this.updateTrainingStatus();
+                this.showNotification('Training stopped', 'warning');
+            }
+        } catch (error) {
+            console.error('Error stopping training:', error);
+            this.showNotification('Error stopping training', 'error');
+        }
+    }
+
+    async resetTraining() {
+        try {
+            const response = await fetch('/reset_training', { method: 'POST' });
+            const result = await response.json();
+            
+            if (result.success) {
+                this.trainingState = {
+                    is_training: false,
+                    iteration: 0,
+                    timesteps_total: 0,
+                    episode_reward_mean: 0.0,
+                    progress_percentage: 0.0,
+                    eta_hours: 0.0
+                };
+                this.elements.startTrainingBtn.disabled = false;
+                this.elements.stopTrainingBtn.disabled = true;
+                this.updateTrainingStatus();
+                this.clearTrainingCharts();
+                this.clearTrainingLogs();
+                this.showNotification('Training state reset', 'info');
+            }
+        } catch (error) {
+            console.error('Error resetting training:', error);
+            this.showNotification('Error resetting training', 'error');
+        }
+    }
+
+    // === WEBSOCKET AND DATA HANDLING ===
+
     connectWebSocket() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -352,10 +638,23 @@ class SOULApp {
     handleWebSocketMessage(data) {
         if (data.type === 'simulation_data') {
             this.updateCharts(data.data);
+        } else if (data.type === 'training_metrics') {
+            this.updateTrainingCharts(data.data);
         } else {
             // State update
             this.currentState = { ...this.currentState, ...data };
             this.updateStatus();
+            
+            // Update training state if present
+            if (data.training_status) {
+                this.trainingState = { ...this.trainingState, ...data.training_status };
+                this.updateTrainingStatus();
+            }
+            
+            // Update training logs if present
+            if (data.training_logs) {
+                this.updateTrainingLogs(data.training_logs);
+            }
             
             if (data.current_data) {
                 this.updateCharts(data.current_data);
@@ -412,6 +711,40 @@ class SOULApp {
         
         // Update historical chart in real-time
         this.updateHistoryChart();
+    }
+
+    updateTrainingCharts(metrics) {
+        if (!metrics) return;
+
+        // Update training progress chart
+        if (this.charts.trainingProgressChart && metrics.iterations && metrics.iterations.length > 0) {
+            const chart = this.charts.trainingProgressChart;
+            chart.data.datasets[0].data = metrics.iterations.map((iteration, index) => ({
+                x: iteration,
+                y: this.trainingState.progress_percentage || 0
+            }));
+            chart.update('none');
+        }
+
+        // Update reward chart
+        if (this.charts.rewardChart && metrics.rewards && metrics.iterations) {
+            const chart = this.charts.rewardChart;
+            chart.data.datasets[0].data = metrics.iterations.map((iteration, index) => ({
+                x: iteration,
+                y: metrics.rewards[index] || 0
+            }));
+            chart.update('none');
+        }
+
+        // Update agent metrics chart
+        if (this.charts.agentMetricsChart && metrics.timesteps && metrics.iterations) {
+            const chart = this.charts.agentMetricsChart;
+            chart.data.datasets[0].data = metrics.iterations.map((iteration, index) => ({
+                x: iteration,
+                y: metrics.timesteps[index] || 0
+            }));
+            chart.update('none');
+        }
     }
 
     updateAffinityTable(affinityMatrix) {
@@ -498,6 +831,8 @@ class SOULApp {
         }
     }
 
+    // === UI UPDATE METHODS ===
+
     updateConnectionStatus(connected) {
         const status = this.elements.connectionStatus;
         if (connected) {
@@ -531,6 +866,47 @@ class SOULApp {
             this.elements.playBtn.disabled = true;
             this.elements.pauseBtn.disabled = true;
             this.showNotification('Simulation terminated', 'warning');
+        }
+    }
+
+    updateTrainingStatus() {
+        // Update training iteration and timesteps
+        this.elements.trainingIteration.textContent = `Iteration: ${this.trainingState.iteration}`;
+        this.elements.trainingTimesteps.textContent = `Timesteps: ${this.trainingState.timesteps_total.toLocaleString()}`;
+        
+        // Update training status
+        const status = this.elements.trainingStatus;
+        if (this.trainingState.is_training) {
+            status.innerHTML = '<span class="status-indicator"></span>Training';
+            status.className = 'badge bg-success status-training';
+        } else {
+            status.innerHTML = '<span class="status-indicator"></span>Not Started';
+            status.className = 'badge bg-secondary status-stopped';
+        }
+        
+        // Update button states
+        this.elements.startTrainingBtn.disabled = this.trainingState.is_training;
+        this.elements.stopTrainingBtn.disabled = !this.trainingState.is_training;
+    }
+
+    updateTrainingLogs(logs) {
+        if (!this.elements.trainingLogs || !logs) return;
+        
+        // Clear existing logs and add new ones
+        this.elements.trainingLogs.innerHTML = '';
+        
+        if (logs.length === 0) {
+            this.elements.trainingLogs.innerHTML = '<div class="text-muted">Training logs will appear here...</div>';
+        } else {
+            logs.forEach(log => {
+                const logDiv = document.createElement('div');
+                logDiv.textContent = log;
+                logDiv.style.marginBottom = '0.25rem';
+                this.elements.trainingLogs.appendChild(logDiv);
+            });
+            
+            // Auto-scroll to bottom
+            this.elements.trainingLogs.scrollTop = this.elements.trainingLogs.scrollHeight;
         }
     }
 
@@ -575,6 +951,33 @@ class SOULApp {
                 cell.title = '';
                 cell.className = 'matrix-cell';
             });
+        }
+    }
+
+    clearTrainingCharts() {
+        // Clear training chart data
+        const trainingChartIds = ['trainingProgressChart', 'rewardChart', 'agentMetricsChart'];
+        trainingChartIds.forEach(chartId => {
+            if (this.charts[chartId]) {
+                this.charts[chartId].data.datasets.forEach(dataset => {
+                    dataset.data = [];
+                });
+                this.charts[chartId].update('none');
+            }
+        });
+        
+        // Clear training metrics
+        this.trainingMetrics = {
+            'iterations': [],
+            'timesteps': [],
+            'rewards': [],
+            'agent_metrics': {}
+        };
+    }
+
+    clearTrainingLogs() {
+        if (this.elements.trainingLogs) {
+            this.elements.trainingLogs.innerHTML = '<div class="text-muted">Training logs will appear here...</div>';
         }
     }
 

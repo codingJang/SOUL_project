@@ -30,222 +30,393 @@
             <p class="subtitle">Advanced AI-driven economic modeling and real-time analytics platform</p>
         </div>
         
-        <!-- Professional Control Panel -->
-        <div class="row justify-content-center" style="margin-bottom: 2rem;">
+        <!-- Main Tab Navigation -->
+        <div class="row justify-content-center mb-4">
             <div class="col-lg-10 col-xl-8">
-                <div class="dashboard-section">
-                    <div class="dashboard-section-header">
-                        <h3>Simulation Control Center</h3>
+                <ul class="nav nav-pills nav-fill mb-4" id="mainTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="loadplay-tab" data-bs-toggle="pill" data-bs-target="#loadplay-content" type="button" role="tab" aria-controls="loadplay-content" aria-selected="true">
+                            <i class="fas fa-play-circle me-2"></i>Load & Play
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="train-tab" data-bs-toggle="pill" data-bs-target="#train-content" type="button" role="tab" aria-controls="train-content" aria-selected="false">
+                            <i class="fas fa-brain me-2"></i>Train
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="mainTabContent">
+            <!-- Load & Play Tab -->
+            <div class="tab-pane fade show active" id="loadplay-content" role="tabpanel" aria-labelledby="loadplay-tab">
+                <!-- Professional Control Panel -->
+                <div class="row justify-content-center" style="margin-bottom: 2rem;">
+                    <div class="col-lg-10 col-xl-8">
+                        <div class="dashboard-section">
+                            <div class="dashboard-section-header">
+                                <h3>Simulation Control Center</h3>
+                            </div>
+                            <div class="dashboard-section-content">
+                        <!-- First Row: Simulation Controls and System Status -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-lg-6">
+                                <label class="form-label">Simulation Controls</label>
+                                <div class="d-flex gap-2">
+                                    <button id="loadBtn" class="btn btn-primary" disabled>Load Model</button>
+                                    <button id="playBtn" class="btn btn-success" disabled>Start</button>
+                                    <button id="pauseBtn" class="btn btn-warning" disabled>Pause</button>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <label class="form-label">System Status</label>
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="badge bg-secondary status-connected" id="connectionStatus">
+                                        <span class="status-indicator"></span>Connecting...
+                                    </div>
+                                    <div class="badge bg-info" id="stepCounter">Step: 0</div>
+                                    <div class="badge bg-warning status-stopped" id="simulationStatus">
+                                        <span class="status-indicator"></span>Stopped
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Second Row: Model Checkpoint and Speed Multiplier -->
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <label for="checkpointSelect" class="form-label">Model Checkpoint</label>
+                                <select class="form-select" id="checkpointSelect">
+                                    <option value="">Loading available models...</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-6">
+                                <label for="speedSelect" class="form-label">Speed Multiplier</label>
+                                <select class="form-select" id="speedSelect">
+                                    <option value="0.25">0.25x</option>
+                                    <option value="0.5">0.5x</option>
+                                    <option value="1" selected>1x</option>
+                                    <option value="2">2x</option>
+                                    <option value="5">5x</option>
+                                    <option value="10">10x</option>
+                                </select>
+                            </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="dashboard-section-content">
-                <!-- First Row: Simulation Controls and System Status -->
+                </div>
+
+                <!-- Comprehensive Historical Analysis -->
+                <div class="card" style="margin-top: 3rem; margin-bottom: 2rem;">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Historical Time Series Analysis</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="historySelect" class="form-label mb-0 me-2" style="font-size: 0.875rem; color: white;">Analysis Type:</label>
+                            <select class="form-select" id="historySelect" style="width: auto; min-width: 200px;">
+                                <option value="interest_rates">Interest Rates</option>
+                                <option value="gdp">Gross Domestic Product</option>
+                                <option value="dem_after_shock">Demand After Shock</option>
+                                <option value="price_lvl">Price Level</option>
+                                <option value="delta_price_lvl">Price Level Changes</option>
+                                <option value="affinity">Agent Affinity</option>
+                                <option value="delta_affinity">Affinity Changes</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body historical-chart">
+                        <div class="chart-container large historical">
+                            <canvas id="historyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Professional Analytics Dashboard -->
+                <!-- First Row: Interest Rates and GDP -->
                 <div class="row g-4 mb-4">
                     <div class="col-lg-6">
-                        <label class="form-label">Simulation Controls</label>
-                        <div class="d-flex gap-2">
-                            <button id="loadBtn" class="btn btn-primary" disabled>Load Model</button>
-                            <button id="playBtn" class="btn btn-success" disabled>Start</button>
-                            <button id="pauseBtn" class="btn btn-warning" disabled>Pause</button>
+                        <div class="card dashboard-card">
+                            <div class="card-header">
+                                <h6>Interest Rates</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container dashboard-chart">
+                                    <canvas id="interestRatesChart"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-6">
-                        <label class="form-label">System Status</label>
-                        <div class="d-flex flex-column gap-2">
-                            <div class="badge bg-secondary status-connected" id="connectionStatus">
-                                <span class="status-indicator"></span>Connecting...
+                        <div class="card dashboard-card">
+                            <div class="card-header">
+                                <h6>Gross Domestic Product</h6>
                             </div>
-                            <div class="badge bg-info" id="stepCounter">Step: 0</div>
-                            <div class="badge bg-warning status-stopped" id="simulationStatus">
-                                <span class="status-indicator"></span>Stopped
+                            <div class="card-body">
+                                <div class="chart-container dashboard-chart">
+                                    <canvas id="gdpChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Second Row: Model Checkpoint and Speed Multiplier -->
+
+                <!-- Second Row: Price Level and Affinity Matrix -->
                 <div class="row g-4">
                     <div class="col-lg-6">
-                        <label for="checkpointSelect" class="form-label">Model Checkpoint</label>
-                        <select class="form-select" id="checkpointSelect">
-                            <option value="">Loading available models...</option>
-                        </select>
+                        <div class="card dashboard-card">
+                            <div class="card-header">
+                                <h6>Price Level Dynamics</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container dashboard-chart">
+                                    <canvas id="priceLvlChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-lg-6">
-                        <label for="speedSelect" class="form-label">Speed Multiplier</label>
-                        <select class="form-select" id="speedSelect">
-                            <option value="0.25">0.25x</option>
-                            <option value="0.5">0.5x</option>
-                            <option value="1" selected>1x</option>
-                            <option value="2">2x</option>
-                            <option value="5">5x</option>
-                            <option value="10">10x</option>
-                        </select>
-                    </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Comprehensive Historical Analysis -->
-        <div class="card" style="margin-top: 3rem; margin-bottom: 2rem;">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Historical Time Series Analysis</h6>
-                <div class="d-flex align-items-center gap-2">
-                    <label for="historySelect" class="form-label mb-0 me-2" style="font-size: 0.875rem; color: white;">Analysis Type:</label>
-                    <select class="form-select" id="historySelect" style="width: auto; min-width: 200px;">
-                        <option value="interest_rates">Interest Rates</option>
-                        <option value="gdp">Gross Domestic Product</option>
-                        <option value="dem_after_shock">Demand After Shock</option>
-                        <option value="price_lvl">Price Level</option>
-                        <option value="delta_price_lvl">Price Level Changes</option>
-                        <option value="affinity">Agent Affinity</option>
-                        <option value="delta_affinity">Affinity Changes</option>
-                    </select>
-                </div>
-            </div>
-            <div class="card-body historical-chart">
-                <div class="chart-container large historical">
-                    <canvas id="historyChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Professional Analytics Dashboard -->
-        <!-- First Row: Interest Rates and GDP -->
-        <div class="row g-4 mb-4">
-            <div class="col-lg-6">
-                <div class="card dashboard-card">
-                    <div class="card-header">
-                        <h6>Interest Rates</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container dashboard-chart">
-                            <canvas id="interestRatesChart"></canvas>
+                        <div class="card dashboard-card">
+                            <div class="card-header">
+                                <h6>Agent Affinity Matrix</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="affinity-table-container dashboard-affinity">
+                                    <table id="affinityTable" class="affinity-matrix-table">
+                                        <thead>
+                                            <tr>
+                                                <th class="matrix-corner"></th>
+                                                <th>Agent 0</th>
+                                                <th>Agent 1</th>
+                                                <th>Agent 2</th>
+                                                <th>Agent 3</th>
+                                                <th>Agent 4</th>
+                                                <th>Agent 5</th>
+                                                <th>Agent 6</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <th>Agent 0</th>
+                                                <td class="matrix-cell" data-row="0" data-col="0">-</td>
+                                                <td class="matrix-cell" data-row="0" data-col="1">-</td>
+                                                <td class="matrix-cell" data-row="0" data-col="2">-</td>
+                                                <td class="matrix-cell" data-row="0" data-col="3">-</td>
+                                                <td class="matrix-cell" data-row="0" data-col="4">-</td>
+                                                <td class="matrix-cell" data-row="0" data-col="5">-</td>
+                                                <td class="matrix-cell" data-row="0" data-col="6">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Agent 1</th>
+                                                <td class="matrix-cell" data-row="1" data-col="0">-</td>
+                                                <td class="matrix-cell" data-row="1" data-col="1">-</td>
+                                                <td class="matrix-cell" data-row="1" data-col="2">-</td>
+                                                <td class="matrix-cell" data-row="1" data-col="3">-</td>
+                                                <td class="matrix-cell" data-row="1" data-col="4">-</td>
+                                                <td class="matrix-cell" data-row="1" data-col="5">-</td>
+                                                <td class="matrix-cell" data-row="1" data-col="6">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Agent 2</th>
+                                                <td class="matrix-cell" data-row="2" data-col="0">-</td>
+                                                <td class="matrix-cell" data-row="2" data-col="1">-</td>
+                                                <td class="matrix-cell" data-row="2" data-col="2">-</td>
+                                                <td class="matrix-cell" data-row="2" data-col="3">-</td>
+                                                <td class="matrix-cell" data-row="2" data-col="4">-</td>
+                                                <td class="matrix-cell" data-row="2" data-col="5">-</td>
+                                                <td class="matrix-cell" data-row="2" data-col="6">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Agent 3</th>
+                                                <td class="matrix-cell" data-row="3" data-col="0">-</td>
+                                                <td class="matrix-cell" data-row="3" data-col="1">-</td>
+                                                <td class="matrix-cell" data-row="3" data-col="2">-</td>
+                                                <td class="matrix-cell" data-row="3" data-col="3">-</td>
+                                                <td class="matrix-cell" data-row="3" data-col="4">-</td>
+                                                <td class="matrix-cell" data-row="3" data-col="5">-</td>
+                                                <td class="matrix-cell" data-row="3" data-col="6">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Agent 4</th>
+                                                <td class="matrix-cell" data-row="4" data-col="0">-</td>
+                                                <td class="matrix-cell" data-row="4" data-col="1">-</td>
+                                                <td class="matrix-cell" data-row="4" data-col="2">-</td>
+                                                <td class="matrix-cell" data-row="4" data-col="3">-</td>
+                                                <td class="matrix-cell" data-row="4" data-col="4">-</td>
+                                                <td class="matrix-cell" data-row="4" data-col="5">-</td>
+                                                <td class="matrix-cell" data-row="4" data-col="6">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Agent 5</th>
+                                                <td class="matrix-cell" data-row="5" data-col="0">-</td>
+                                                <td class="matrix-cell" data-row="5" data-col="1">-</td>
+                                                <td class="matrix-cell" data-row="5" data-col="2">-</td>
+                                                <td class="matrix-cell" data-row="5" data-col="3">-</td>
+                                                <td class="matrix-cell" data-row="5" data-col="4">-</td>
+                                                <td class="matrix-cell" data-row="5" data-col="5">-</td>
+                                                <td class="matrix-cell" data-row="5" data-col="6">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Agent 6</th>
+                                                <td class="matrix-cell" data-row="6" data-col="0">-</td>
+                                                <td class="matrix-cell" data-row="6" data-col="1">-</td>
+                                                <td class="matrix-cell" data-row="6" data-col="2">-</td>
+                                                <td class="matrix-cell" data-row="6" data-col="3">-</td>
+                                                <td class="matrix-cell" data-row="6" data-col="4">-</td>
+                                                <td class="matrix-cell" data-row="6" data-col="5">-</td>
+                                                <td class="matrix-cell" data-row="6" data-col="6">-</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6">
-                <div class="card dashboard-card">
-                    <div class="card-header">
-                        <h6>Gross Domestic Product</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container dashboard-chart">
-                            <canvas id="gdpChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Second Row: Price Level and Affinity Matrix -->
-        <div class="row g-4">
-            <div class="col-lg-6">
-                <div class="card dashboard-card">
-                    <div class="card-header">
-                        <h6>Price Level Dynamics</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container dashboard-chart">
-                            <canvas id="priceLvlChart"></canvas>
+            <!-- Training Tab -->
+            <div class="tab-pane fade" id="train-content" role="tabpanel" aria-labelledby="train-tab">
+                <!-- Training Control Panel -->
+                <div class="row justify-content-center" style="margin-bottom: 2rem;">
+                    <div class="col-lg-10 col-xl-8">
+                        <div class="dashboard-section">
+                            <div class="dashboard-section-header">
+                                <h3>Training Control Center</h3>
+                            </div>
+                            <div class="dashboard-section-content">
+                                <!-- First Row: Training Controls and Status -->
+                                <div class="row g-4 mb-4">
+                                    <div class="col-lg-6">
+                                        <label class="form-label">Training Controls</label>
+                                        <div class="d-flex gap-2">
+                                            <button id="startTrainingBtn" class="btn btn-success">Start Training</button>
+                                            <button id="stopTrainingBtn" class="btn btn-danger" disabled>Stop Training</button>
+                                            <button id="resetTrainingBtn" class="btn btn-secondary">Reset</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <label class="form-label">Training Status</label>
+                                        <div class="d-flex flex-column gap-2">
+                                            <div class="badge bg-secondary status-stopped" id="trainingStatus">
+                                                <span class="status-indicator"></span>Not Started
+                                            </div>
+                                            <div class="badge bg-info" id="trainingIteration">Iteration: 0</div>
+                                            <div class="badge bg-warning" id="trainingTimesteps">Timesteps: 0</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Hyperparameter Controls -->
+                                <div class="row g-4">
+                                    <div class="col-lg-6">
+                                        <h5>Hyperparameters</h5>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="lrMin" class="form-label">Learning Rate Min</label>
+                                                <input type="number" class="form-control" id="lrMin" value="0.00001" step="0.00001" min="0.000001" max="0.1">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="lrMax" class="form-label">Learning Rate Max</label>
+                                                <input type="number" class="form-control" id="lrMax" value="0.001" step="0.00001" min="0.000001" max="0.1">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="gammaMin" class="form-label">Gamma Min</label>
+                                                <input type="number" class="form-control" id="gammaMin" value="0.9" step="0.01" min="0.1" max="0.9999">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="gammaMax" class="form-label">Gamma Max</label>
+                                                <input type="number" class="form-control" id="gammaMax" value="0.9999" step="0.01" min="0.1" max="0.9999">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="batchSize" class="form-label">Batch Size</label>
+                                                <input type="number" class="form-control" id="batchSize" value="512" step="64" min="64" max="2048">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="clipParam" class="form-label">Clip Parameter</label>
+                                                <input type="number" class="form-control" id="clipParam" value="0.2" step="0.01" min="0.01" max="1.0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <h5>Training Parameters</h5>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="maxTimesteps" class="form-label">Max Timesteps</label>
+                                                <input type="number" class="form-control" id="maxTimesteps" value="10000000" step="1000000" min="100000">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="numSamples" class="form-label">Num Samples</label>
+                                                <input type="number" class="form-control" id="numSamples" value="20" step="1" min="1" max="100">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="timeBudgetHours" class="form-label">Time Budget (hours)</label>
+                                                <input type="number" class="form-control" id="timeBudgetHours" value="4" step="0.5" min="0.5" max="48">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="checkpointFreq" class="form-label">Checkpoint Frequency</label>
+                                                <input type="number" class="form-control" id="checkpointFreq" value="1000" step="100" min="100" max="10000">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="card dashboard-card">
-                    <div class="card-header">
-                        <h6>Agent Affinity Matrix</h6>
+
+                <!-- Training Progress Dashboard -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="card dashboard-card">
+                            <div class="card-header">
+                                <h6>Training Progress</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container dashboard-chart">
+                                    <canvas id="trainingProgressChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="affinity-table-container dashboard-affinity">
-                            <table id="affinityTable" class="affinity-matrix-table">
-                                <thead>
-                                    <tr>
-                                        <th class="matrix-corner"></th>
-                                        <th>Agent 0</th>
-                                        <th>Agent 1</th>
-                                        <th>Agent 2</th>
-                                        <th>Agent 3</th>
-                                        <th>Agent 4</th>
-                                        <th>Agent 5</th>
-                                        <th>Agent 6</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <th>Agent 0</th>
-                                        <td class="matrix-cell" data-row="0" data-col="0">-</td>
-                                        <td class="matrix-cell" data-row="0" data-col="1">-</td>
-                                        <td class="matrix-cell" data-row="0" data-col="2">-</td>
-                                        <td class="matrix-cell" data-row="0" data-col="3">-</td>
-                                        <td class="matrix-cell" data-row="0" data-col="4">-</td>
-                                        <td class="matrix-cell" data-row="0" data-col="5">-</td>
-                                        <td class="matrix-cell" data-row="0" data-col="6">-</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Agent 1</th>
-                                        <td class="matrix-cell" data-row="1" data-col="0">-</td>
-                                        <td class="matrix-cell" data-row="1" data-col="1">-</td>
-                                        <td class="matrix-cell" data-row="1" data-col="2">-</td>
-                                        <td class="matrix-cell" data-row="1" data-col="3">-</td>
-                                        <td class="matrix-cell" data-row="1" data-col="4">-</td>
-                                        <td class="matrix-cell" data-row="1" data-col="5">-</td>
-                                        <td class="matrix-cell" data-row="1" data-col="6">-</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Agent 2</th>
-                                        <td class="matrix-cell" data-row="2" data-col="0">-</td>
-                                        <td class="matrix-cell" data-row="2" data-col="1">-</td>
-                                        <td class="matrix-cell" data-row="2" data-col="2">-</td>
-                                        <td class="matrix-cell" data-row="2" data-col="3">-</td>
-                                        <td class="matrix-cell" data-row="2" data-col="4">-</td>
-                                        <td class="matrix-cell" data-row="2" data-col="5">-</td>
-                                        <td class="matrix-cell" data-row="2" data-col="6">-</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Agent 3</th>
-                                        <td class="matrix-cell" data-row="3" data-col="0">-</td>
-                                        <td class="matrix-cell" data-row="3" data-col="1">-</td>
-                                        <td class="matrix-cell" data-row="3" data-col="2">-</td>
-                                        <td class="matrix-cell" data-row="3" data-col="3">-</td>
-                                        <td class="matrix-cell" data-row="3" data-col="4">-</td>
-                                        <td class="matrix-cell" data-row="3" data-col="5">-</td>
-                                        <td class="matrix-cell" data-row="3" data-col="6">-</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Agent 4</th>
-                                        <td class="matrix-cell" data-row="4" data-col="0">-</td>
-                                        <td class="matrix-cell" data-row="4" data-col="1">-</td>
-                                        <td class="matrix-cell" data-row="4" data-col="2">-</td>
-                                        <td class="matrix-cell" data-row="4" data-col="3">-</td>
-                                        <td class="matrix-cell" data-row="4" data-col="4">-</td>
-                                        <td class="matrix-cell" data-row="4" data-col="5">-</td>
-                                        <td class="matrix-cell" data-row="4" data-col="6">-</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Agent 5</th>
-                                        <td class="matrix-cell" data-row="5" data-col="0">-</td>
-                                        <td class="matrix-cell" data-row="5" data-col="1">-</td>
-                                        <td class="matrix-cell" data-row="5" data-col="2">-</td>
-                                        <td class="matrix-cell" data-row="5" data-col="3">-</td>
-                                        <td class="matrix-cell" data-row="5" data-col="4">-</td>
-                                        <td class="matrix-cell" data-row="5" data-col="5">-</td>
-                                        <td class="matrix-cell" data-row="5" data-col="6">-</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Agent 6</th>
-                                        <td class="matrix-cell" data-row="6" data-col="0">-</td>
-                                        <td class="matrix-cell" data-row="6" data-col="1">-</td>
-                                        <td class="matrix-cell" data-row="6" data-col="2">-</td>
-                                        <td class="matrix-cell" data-row="6" data-col="3">-</td>
-                                        <td class="matrix-cell" data-row="6" data-col="4">-</td>
-                                        <td class="matrix-cell" data-row="6" data-col="5">-</td>
-                                        <td class="matrix-cell" data-row="6" data-col="6">-</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <div class="col-lg-6">
+                        <div class="card dashboard-card">
+                            <div class="card-header">
+                                <h6>Reward Metrics</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container dashboard-chart">
+                                    <canvas id="rewardChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Training Logs and Metrics -->
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="card dashboard-card">
+                            <div class="card-header">
+                                <h6>Agent Metrics</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container dashboard-chart">
+                                    <canvas id="agentMetricsChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card dashboard-card">
+                            <div class="card-header">
+                                <h6>Training Logs</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="training-logs" id="trainingLogs" style="height: 300px; overflow-y: auto; background: #f8f9fa; padding: 1rem; border-radius: 0.375rem; font-family: monospace; font-size: 0.875rem;">
+                                    <div class="text-muted">Training logs will appear here...</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -255,6 +426,8 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Font Awesome for icons -->
+    <script src="https://kit.fontawesome.com/your-font-awesome-kit.js" crossorigin="anonymous"></script>
     <!-- Custom JS -->
     <script src="{{ url_for('static', path='/js/app.js') }}"></script>
 </body>

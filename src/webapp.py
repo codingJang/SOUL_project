@@ -5,6 +5,8 @@ import json
 import asyncio
 import numpy as np
 import glob
+import threading
+import subprocess
 from datetime import datetime
 from collections import deque
 from typing import Dict, List, Optional
@@ -20,6 +22,8 @@ from pydantic import BaseModel
 from env import MacroSimRayRLlibEnv, N
 from ray.rllib.policy.policy import Policy
 from configs.color_schemes import color_scheme
+from configs.rllib_train_config import RLlibTrainConfig
+from configs.environment_config import MacroSimEnvConfig
 
 
 class CheckpointInfo(BaseModel):
@@ -34,6 +38,30 @@ class SimulationState(BaseModel):
     step: int
     current_data: Optional[Dict] = None
     is_terminated: bool = False
+
+
+class TrainingConfig(BaseModel):
+    lr_min: float = 1e-5
+    lr_max: float = 1e-3
+    gamma_min: float = 0.9
+    gamma_max: float = 0.9999
+    clip_param: float = 0.2
+    train_batch_size: int = 512
+    max_timesteps: int = 10000000
+    num_samples: int = 20
+    time_budget_hours: float = 4.0
+    checkpoint_frequency: int = 1000
+
+
+class TrainingStatus(BaseModel):
+    is_training: bool = False
+    iteration: int = 0
+    timesteps_total: int = 0
+    episode_reward_mean: float = 0.0
+    training_config: Optional[TrainingConfig] = None
+    progress_percentage: float = 0.0
+    eta_hours: float = 0.0
+    logs: List[str] = []
 
 
 class ConnectionManager:
@@ -58,6 +86,236 @@ class ConnectionManager:
             except:
                 # Remove disconnected connections
                 self.disconnect(connection)
+
+
+class TrainingManager:
+    def __init__(self):
+        self.is_training = False
+        self.training_process = None
+        self.training_thread = None
+        self.training_config = TrainingConfig()
+        self.training_status = TrainingStatus()
+        self.logs = deque(maxlen=1000)  # Store last 1000 log entries
+        self.start_time = None
+        self.progress_metrics = {
+            'iterations': [],
+            'timesteps': [],
+            'rewards': [],
+            'agent_metrics': {}
+        }
+        
+    def start_training(self, config: TrainingConfig):
+        """Start training with given configuration."""
+        if self.is_training:
+            raise ValueError("Training is already in progress")
+        
+        self.training_config = config
+        self.is_training = True
+        self.start_time = time.time()
+        self.training_status.is_training = True
+        self.training_status.training_config = config
+        self.logs.clear()
+        
+        # Start training in a separate thread
+        self.training_thread = threading.Thread(target=self._run_training, daemon=True)
+        self.training_thread.start()
+        
+        self.add_log("Training started with new configuration")
+        return True
+    
+    def stop_training(self):
+        """Stop the current training process."""
+        if not self.is_training:
+            return False
+        
+        self.is_training = False
+        self.training_status.is_training = False
+        
+        if self.training_process:
+            self.training_process.terminate()
+            self.training_process = None
+        
+        self.add_log("Training stopped by user")
+        return True
+    
+    def reset_training(self):
+        """Reset training state."""
+        self.stop_training()
+        self.training_status = TrainingStatus()
+        self.logs.clear()
+        self.progress_metrics = {
+            'iterations': [],
+            'timesteps': [],
+            'rewards': [],
+            'agent_metrics': {}
+        }
+        self.add_log("Training state reset")
+        return True
+    
+    def get_status(self):
+        """Get current training status."""
+        return self.training_status
+    
+    def get_logs(self, limit: int = 100):
+        """Get recent training logs."""
+        return list(self.logs)[-limit:]
+    
+    def add_log(self, message: str):
+        """Add a log entry with timestamp."""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        log_entry = f"[{timestamp}] {message}"
+        self.logs.append(log_entry)
+        self.training_status.logs = self.get_logs(50)  # Keep last 50 in status
+    
+    def _run_training(self):
+        """Run the training process in a separate thread."""
+        try:
+            # Import Ray modules here to avoid conflicts with the simulation environment
+            import ray
+            from ray import tune, air, train
+            from ray.rllib.algorithms.appo import APPOConfig
+            from ray.tune.registry import register_env
+            
+            self.add_log("Initializing Ray for training...")
+            
+            # Initialize Ray
+            if not ray.is_initialized():
+                ray.init(num_gpus=0, log_to_driver=False, logging_level='ERROR')
+            
+            # Environment setup
+            def env_creator(env_config):
+                from env import MacroSimRayRLlibEnv
+                env_config_obj = MacroSimEnvConfig()
+                return MacroSimRayRLlibEnv(render_mode='array', config=env_config.get('env_config', env_config_obj))
+            
+            env_name = "macro_sim_rllib_env_v0"
+            register_env(env_name, env_creator)
+            
+            self.add_log("Environment registered successfully")
+            
+            # Create temporary environment for configuration
+            env_config_obj = MacroSimEnvConfig()
+            temp_env = env_creator({'env_config': env_config_obj})
+            
+            # Configure APPO
+            config = (
+                APPOConfig()
+                .training(
+                    lr=tune.loguniform(self.training_config.lr_min, self.training_config.lr_max),
+                    gamma=tune.uniform(self.training_config.gamma_min, self.training_config.gamma_max),
+                    clip_param=self.training_config.clip_param,
+                    train_batch_size=self.training_config.train_batch_size
+                )
+                .environment(env=env_name, clip_actions=True, env_config={'env_config': env_config_obj})
+                .rollouts(num_rollout_workers=1)  # Use fewer workers for web interface
+                .framework(framework="torch")
+                .resources(num_learner_workers=1, num_cpus_for_local_worker=1)
+                .multi_agent(
+                    policies=temp_env.get_agent_ids(),
+                    policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id),
+                )
+                .debugging(log_level="ERROR")
+            )
+            
+            config.model['use_lstm'] = True
+            
+            self.add_log(f"Starting training with {self.training_config.num_samples} samples")
+            
+            # Custom callback for progress tracking
+            class WebTrainingCallback:
+                def __init__(self, training_manager):
+                    self.training_manager = training_manager
+                
+                def __call__(self, trial_id, result):
+                    if not self.training_manager.is_training:
+                        return True  # Stop if training was cancelled
+                    
+                    iteration = result.get("training_iteration", 0)
+                    timesteps = result.get("timesteps_total", 0)
+                    reward_mean = result.get("episode_reward_mean", 0)
+                    
+                    # Update status
+                    self.training_manager.training_status.iteration = iteration
+                    self.training_manager.training_status.timesteps_total = timesteps
+                    self.training_manager.training_status.episode_reward_mean = reward_mean
+                    
+                    # Calculate progress
+                    progress = min(100, (timesteps / self.training_manager.training_config.max_timesteps) * 100)
+                    self.training_manager.training_status.progress_percentage = progress
+                    
+                    # Calculate ETA
+                    if timesteps > 0 and self.training_manager.start_time:
+                        elapsed = time.time() - self.training_manager.start_time
+                        estimated_total = elapsed * (self.training_manager.training_config.max_timesteps / timesteps)
+                        eta = max(0, estimated_total - elapsed) / 3600  # Convert to hours
+                        self.training_manager.training_status.eta_hours = eta
+                    
+                    # Store metrics
+                    self.training_manager.progress_metrics['iterations'].append(iteration)
+                    self.training_manager.progress_metrics['timesteps'].append(timesteps)
+                    self.training_manager.progress_metrics['rewards'].append(reward_mean)
+                    
+                    # Log progress every 5 iterations
+                    if iteration % 5 == 0:
+                        self.training_manager.add_log(
+                            f"Iteration {iteration}: {timesteps:,} timesteps, avg reward: {reward_mean:.3f}"
+                        )
+                    
+                    return False  # Continue training
+            
+            # Stop function
+            def stop_fn(trial_id: str, result: dict) -> bool:
+                if not self.is_training:
+                    return True
+                
+                timesteps_reached = result["timesteps_total"] >= self.training_config.max_timesteps
+                if timesteps_reached:
+                    self.add_log("Training completed: Maximum timesteps reached")
+                
+                return timesteps_reached
+            
+            # Create tuner
+            tuner = tune.Tuner(
+                "APPO",
+                run_config=air.RunConfig(
+                    storage_path=os.path.abspath("models"),
+                    checkpoint_config=train.CheckpointConfig(
+                        checkpoint_frequency=self.training_config.checkpoint_frequency
+                    ),
+                    stop=stop_fn,
+                    verbose=0
+                ),
+                tune_config=tune.TuneConfig(
+                    num_samples=self.training_config.num_samples,
+                    time_budget_s=int(self.training_config.time_budget_hours * 3600),
+                    max_concurrent_trials=1
+                ),
+                param_space=config.to_dict()
+            )
+            
+            # Run training
+            self.add_log("Training started successfully")
+            result = tuner.fit()
+            
+            if self.is_training:  # Only log completion if not manually stopped
+                self.add_log("Training completed successfully!")
+                best_result = result.get_best_result()
+                if best_result:
+                    final_reward = best_result.metrics.get("episode_reward_mean", 0)
+                    self.add_log(f"Best result - Final reward: {final_reward:.3f}")
+            
+        except Exception as e:
+            self.add_log(f"Training error: {str(e)}")
+            print(f"Training error: {e}")
+        finally:
+            self.is_training = False
+            self.training_status.is_training = False
+            if ray.is_initialized():
+                ray.shutdown()
+    
+    def get_progress_metrics(self):
+        """Get training progress metrics for visualization."""
+        return self.progress_metrics
 
 
 class SimulationManager:
@@ -229,6 +487,7 @@ class SimulationManager:
 
 # Global instances
 sim_manager = SimulationManager()
+training_manager = TrainingManager()
 manager = ConnectionManager()
 
 # Lifespan manager
@@ -240,12 +499,13 @@ async def lifespan(app: FastAPI):
     # Shutdown
     print("Shutting down...")
     sim_manager.cleanup()
+    training_manager.stop_training()
 
 # Create FastAPI app
 app = FastAPI(
-    title="SOUL Project - Load and Play Web Interface",
-    description="Web interface for loading and running AI economic simulations",
-    version="1.0.0",
+    title="SOUL Project - Economic Simulation & Training Platform",
+    description="Web interface for loading, training, and running AI economic simulations",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -258,6 +518,8 @@ app.mount("/static", StaticFiles(directory="src/static"), name="static")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+
+# === SIMULATION ENDPOINTS (Load & Play Tab) ===
 
 @app.get("/checkpoints", response_model=List[CheckpointInfo])
 async def get_checkpoints():
@@ -330,6 +592,75 @@ async def get_all_history():
     return sim_manager.get_history_data()
 
 
+# === TRAINING ENDPOINTS (Train Tab) ===
+
+@app.post("/start_training")
+async def start_training(request: Request):
+    """Start training with given configuration."""
+    try:
+        data = await request.json()
+        
+        # Create training configuration from request data
+        config = TrainingConfig(
+            lr_min=float(data.get('lr_min', 1e-5)),
+            lr_max=float(data.get('lr_max', 1e-3)),
+            gamma_min=float(data.get('gamma_min', 0.9)),
+            gamma_max=float(data.get('gamma_max', 0.9999)),
+            clip_param=float(data.get('clip_param', 0.2)),
+            train_batch_size=int(data.get('train_batch_size', 512)),
+            max_timesteps=int(data.get('max_timesteps', 10000000)),
+            num_samples=int(data.get('num_samples', 20)),
+            time_budget_hours=float(data.get('time_budget_hours', 4.0)),
+            checkpoint_frequency=int(data.get('checkpoint_frequency', 1000))
+        )
+        
+        training_manager.start_training(config)
+        return {"success": True, "message": "Training started"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/stop_training")
+async def stop_training():
+    """Stop the current training process."""
+    try:
+        result = training_manager.stop_training()
+        if result:
+            return {"success": True, "message": "Training stopped"}
+        else:
+            return {"success": False, "message": "No training in progress"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/reset_training")
+async def reset_training():
+    """Reset training state."""
+    try:
+        training_manager.reset_training()
+        return {"success": True, "message": "Training state reset"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/training_status")
+async def get_training_status():
+    """Get current training status."""
+    return training_manager.get_status()
+
+
+@app.get("/training_logs")
+async def get_training_logs(limit: int = 100):
+    """Get recent training logs."""
+    return {"logs": training_manager.get_logs(limit)}
+
+
+@app.get("/training_metrics")
+async def get_training_metrics():
+    """Get training progress metrics."""
+    return training_manager.get_progress_metrics()
+
+
 @app.get("/color_scheme")
 async def get_color_scheme():
     """Get color scheme for consistent visualization."""
@@ -354,8 +685,16 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            # Send current state
+            # Send current state for simulation
             state = sim_manager.get_state()
+            
+            # Add training status to the state
+            training_status = training_manager.get_status()
+            state.update({
+                "training_status": training_status.dict(),
+                "training_logs": training_manager.get_logs(10)  # Send last 10 logs
+            })
+            
             await manager.send_personal_message(json.dumps(state), websocket)
             
             # If playing, step the simulation
@@ -366,6 +705,14 @@ async def websocket_endpoint(websocket: WebSocket):
                         json.dumps({"type": "simulation_data", "data": data}), 
                         websocket
                     )
+            
+            # Send training metrics if training is active
+            if training_manager.is_training:
+                metrics = training_manager.get_progress_metrics()
+                await manager.send_personal_message(
+                    json.dumps({"type": "training_metrics", "data": metrics}),
+                    websocket
+                )
             
             await asyncio.sleep(1.0 / sim_manager.speed_multiplier)  # Update based on speed multiplier
             
