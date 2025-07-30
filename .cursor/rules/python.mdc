@@ -72,6 +72,7 @@ globs: **/*.py, src/**/*.py, tests/**/*.py
 - Implement proper fixtures
 - Use proper mocking with pytest-mock
 - Test all error scenarios
+- **Fast feedback loop with testing is a must-have for serious AI development** - Use BDD + unit tests run by Cursor via script in the inline terminal window (behavior forced by .rules), with decent logging and error messages. Keep it simple, effective, and free without requiring 3rd party/MCP tools
 
 ## Security
 - Use HTTPS in production

@@ -21,6 +21,7 @@ class ItemPlotWidget(FigureCanvas):
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
         self.axs = [self.ax]
+        self.colorbar = None  # Store reference to colorbar
         # self.figure.tight_layout()
 
 
@@ -53,14 +54,20 @@ class ItemPlotWidget(FigureCanvas):
     def ShowDepthPlot(self, value, N, colors=None, colormap='RdBu_r'):
         """Show heatmap with unified color scheme."""
         plt.close('all')
+        
+        # Remove existing colorbar if it exists
+        if self.colorbar is not None:
+            self.colorbar.remove()
+            self.colorbar = None
+            
         for ax in self.axs:
             ax.clear()
 
         # Display the 2D affinity matrix as a heatmap with better colormap
         im = self.ax.imshow(value, cmap=colormap, interpolation='nearest', aspect='auto')
         
-        # Add colorbar
-        plt.colorbar(im, ax=self.ax, fraction=0.046, pad=0.04)
+        # Add colorbar and store reference
+        self.colorbar = plt.colorbar(im, ax=self.ax, fraction=0.046, pad=0.04)
         
         self.ax.set_title('Affinity Matrix')
         self.draw()

@@ -5,6 +5,7 @@ Welcome to the SOUL Project documentation! This project implements a multi-agent
 ## 📖 Documentation Overview
 
 ### Core Documentation
+- **[Web Interface Guide](web-interface.md)** - Modern web UI for real-time simulation control and visualization
 - **[Data Analysis Guide](data-analysis.md)** - Comprehensive guide to political and economic data analysis pipelines
 - **[Configuration Guide](configuration.md)** - Configuration system for multi-agent simulation environments
 - **[Color Schemes Guide](color-schemes.md)** - Unified color scheme for consistent visualizations
@@ -32,6 +33,14 @@ uv sync
 # Activate environment
 source .venv/bin/activate
 ```
+
+### Running the Web Interface (Recommended)
+
+**Start Web Application:**
+```bash
+./scripts/run_webapp.sh
+```
+Then open http://localhost:8000 in your browser for an interactive interface with real-time simulation visualization.
 
 ### Running Analysis Pipelines
 

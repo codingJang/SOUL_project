@@ -1,0 +1,7 @@
+---
+description: Rules to adhere to when developing web applications.
+alwaysApply: true
+---
+- When developing a web application, use the Playwright mcp to interact with the webapp.
+- Host the website using uvicorn.
+- Always test that each functionality works after implementing.

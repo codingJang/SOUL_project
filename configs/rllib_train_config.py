@@ -78,7 +78,7 @@ class RLlibTrainConfig:
         return self.max_concurrent_trials_local if self.is_local else self.max_concurrent_trials_cluster
     
     # Checkpoint configuration
-    checkpoint_frequency: int = 10
+    checkpoint_frequency: int = 1000
     
     def validate(self) -> None:
         """Validate configuration parameters."""

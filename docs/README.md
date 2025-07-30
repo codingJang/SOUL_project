@@ -22,7 +22,8 @@ docs/
 ## 📖 Quick Navigation
 
 ### **Start Here**
-- **[📋 Project Overview](index.md)** - Complete project introduction, quick start, and architecture overview
+- **[📋 Main README](../README.md)** - Quick project overview (you are here)
+- **[📋 Complete Documentation](index.md)** - Full project introduction, quick start, and architecture overview
 
 ### **Core Guides**
 - **[📊 Data Analysis Guide](data-analysis.md)** - Political and economic data analysis pipelines

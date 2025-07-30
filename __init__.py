@@ -8,4 +8,4 @@ __version__ = "1.0.0"
 __author__ = "SOUL Project Team"
 
 from src import *
-from configs import *
+import configs
