@@ -84,6 +84,13 @@ class SOULApp {
             trainingTimesteps: document.getElementById('trainingTimesteps'),
             trainingLogs: document.getElementById('trainingLogs'),
             
+            // Upload elements
+            uploadForm: document.getElementById('uploadForm'),
+            checkpointName: document.getElementById('checkpointName'),
+            checkpointFile: document.getElementById('checkpointFile'),
+            uploadBtn: document.getElementById('uploadBtn'),
+            uploadProgress: document.getElementById('uploadProgress'),
+            
             // Hyperparameter controls
             lrMin: document.getElementById('lrMin'),
             lrMax: document.getElementById('lrMax'),
@@ -111,6 +118,10 @@ class SOULApp {
         this.elements.startTrainingBtn.addEventListener('click', () => this.startTraining());
         this.elements.stopTrainingBtn.addEventListener('click', () => this.stopTraining());
         this.elements.resetTrainingBtn.addEventListener('click', () => this.resetTraining());
+        
+        // Add event listeners for upload functionality
+        this.elements.uploadForm.addEventListener('submit', (e) => this.handleUpload(e));
+        this.elements.checkpointFile.addEventListener('change', () => this.validateUploadForm());
     }
 
     setupTabSwitching() {
@@ -508,6 +519,107 @@ class SOULApp {
         } catch (error) {
             console.error('Error setting speed:', error);
             this.showNotification('Error setting speed', 'error');
+        }
+    }
+
+    // === UPLOAD METHODS ===
+
+    validateUploadForm() {
+        const file = this.elements.checkpointFile.files[0];
+        const name = this.elements.checkpointName.value.trim();
+        
+        const isValid = file && name && file.name.endsWith('.zip');
+        this.elements.uploadBtn.disabled = !isValid;
+        
+        if (file && !file.name.endsWith('.zip')) {
+            this.showNotification('Please select a ZIP file', 'warning');
+        }
+        
+        return isValid;
+    }
+
+    async handleUpload(event) {
+        event.preventDefault();
+        
+        if (!this.validateUploadForm()) {
+            this.showNotification('Please fill in all fields correctly', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', this.elements.checkpointFile.files[0]);
+        formData.append('checkpoint_name', this.elements.checkpointName.value.trim());
+
+        // Show upload progress
+        this.setUploadState(true);
+
+        try {
+            const response = await fetch('/upload_checkpoint', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                this.showNotification(result.message, 'success');
+                
+                // Reset form
+                this.elements.uploadForm.reset();
+                this.elements.uploadBtn.disabled = true;
+                
+                // Refresh checkpoint list
+                await this.loadCheckpoints();
+                
+                // Auto-select the uploaded checkpoint
+                if (result.checkpoint_path) {
+                    this.elements.checkpointSelect.value = result.checkpoint_path;
+                    this.elements.loadBtn.disabled = false;
+                }
+                
+            } else {
+                this.showNotification(result.detail || 'Upload failed', 'error');
+            }
+
+        } catch (error) {
+            console.error('Upload error:', error);
+            this.showNotification('Upload failed: Network error', 'error');
+        } finally {
+            this.setUploadState(false);
+        }
+    }
+
+    setUploadState(uploading) {
+        this.elements.uploadBtn.disabled = uploading;
+        
+        if (uploading) {
+            this.elements.uploadBtn.classList.add('uploading');
+            this.elements.uploadProgress.style.display = 'block';
+            
+            // Simulate progress for user feedback
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 30;
+                if (progress > 90) progress = 90;
+                this.elements.uploadProgress.querySelector('.progress-bar').style.width = progress + '%';
+            }, 200);
+            
+            this.uploadProgressInterval = progressInterval;
+        } else {
+            this.elements.uploadBtn.classList.remove('uploading');
+            
+            if (this.uploadProgressInterval) {
+                clearInterval(this.uploadProgressInterval);
+            }
+            
+            // Complete the progress bar
+            this.elements.uploadProgress.querySelector('.progress-bar').style.width = '100%';
+            
+            // Hide progress bar after a short delay
+            setTimeout(() => {
+                this.elements.uploadProgress.style.display = 'none';
+                this.elements.uploadProgress.querySelector('.progress-bar').style.width = '0%';
+            }, 1000);
         }
     }
 

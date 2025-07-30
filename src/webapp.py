@@ -7,12 +7,18 @@ import numpy as np
 import glob
 import threading
 import subprocess
+import zipfile
+import tempfile
+import shutil
 from datetime import datetime
 from collections import deque
 from typing import Dict, List, Optional
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
+# Add parent directory to Python path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, UploadFile, File, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -374,12 +380,105 @@ class SimulationManager:
                             'path': checkpoint_dir,
                             'display_name': f"{appo_name}/{os.path.basename(exp_subdir)}/{checkpoint_name}",
                             'full_path': checkpoint_dir,
-                            'timestamp': appo_name.split('_')[-2:] if '_' in appo_name else ['', '']
+                            'timestamp': appo_name.split('_')[-2:] if '_' in appo_name else ['', ''],
+                            'type': 'trained'
                         })
         
-        # Sort by timestamp (most recent first)
-        checkpoints.sort(key=lambda x: ''.join(x['timestamp']), reverse=True)
+        # Find uploaded checkpoints
+        uploaded_dir = os.path.join(models_dir, "uploaded")
+        if os.path.exists(uploaded_dir):
+            uploaded_checkpoints = glob.glob(os.path.join(uploaded_dir, "*"))
+            for checkpoint_dir in uploaded_checkpoints:
+                if os.path.isdir(checkpoint_dir):
+                    policies_dir = os.path.join(checkpoint_dir, "policies")
+                    if os.path.exists(policies_dir):
+                        checkpoint_name = os.path.basename(checkpoint_dir)
+                        checkpoints.append({
+                            'path': checkpoint_dir,
+                            'display_name': f"[Uploaded] {checkpoint_name}",
+                            'full_path': checkpoint_dir,
+                            'timestamp': ['uploaded', ''],
+                            'type': 'uploaded'
+                        })
+        
+        # Sort by timestamp (most recent first), with uploaded models at the top
+        checkpoints.sort(key=lambda x: (x['type'] != 'uploaded', ''.join(x['timestamp'])), reverse=True)
         return checkpoints
+
+    def validate_checkpoint_structure(self, checkpoint_dir: str) -> bool:
+        """Validate that the checkpoint has the required structure."""
+        try:
+            policies_dir = os.path.join(checkpoint_dir, "policies")
+            if not os.path.exists(policies_dir):
+                return False
+            
+            # Check for required agent policies
+            required_agents = [f"agent_{i}" for i in range(N)]
+            for agent in required_agents:
+                agent_dir = os.path.join(policies_dir, agent)
+                if not os.path.exists(agent_dir):
+                    return False
+                
+                # Check for required files in agent directory
+                required_files = ["policy_state.pkl"]  # Minimum required file
+                for req_file in required_files:
+                    if not os.path.exists(os.path.join(agent_dir, req_file)):
+                        return False
+            
+            return True
+        except Exception as e:
+            print(f"Validation error: {e}")
+            return False
+
+    def extract_and_validate_checkpoint(self, zip_file_path: str, checkpoint_name: str) -> str:
+        """Extract and validate uploaded checkpoint zip file."""
+        models_dir = "./models/"
+        uploaded_dir = os.path.join(models_dir, "uploaded")
+        
+        # Create uploaded directory if it doesn't exist
+        os.makedirs(uploaded_dir, exist_ok=True)
+        
+        # Create temporary extraction directory
+        temp_dir = tempfile.mkdtemp()
+        
+        try:
+            # Extract zip file
+            with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+                zip_ref.extractall(temp_dir)
+            
+            # Find the checkpoint directory in extracted files
+            # Look for a directory containing "policies" subdirectory
+            checkpoint_dir = None
+            for root, dirs, files in os.walk(temp_dir):
+                if "policies" in dirs:
+                    checkpoint_dir = root
+                    break
+            
+            if not checkpoint_dir:
+                raise ValueError("No valid checkpoint structure found in zip file")
+            
+            # Validate checkpoint structure
+            if not self.validate_checkpoint_structure(checkpoint_dir):
+                raise ValueError("Invalid checkpoint structure - missing required agent policies")
+            
+            # Create final destination
+            final_dir = os.path.join(uploaded_dir, checkpoint_name)
+            
+            # Remove existing if present
+            if os.path.exists(final_dir):
+                shutil.rmtree(final_dir)
+            
+            # Move to final location
+            shutil.move(checkpoint_dir, final_dir)
+            
+            return final_dir
+            
+        except Exception as e:
+            raise ValueError(f"Failed to extract or validate checkpoint: {str(e)}")
+        finally:
+            # Clean up temporary directory
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
 
     def load_checkpoint(self, checkpoint_path: str):
         """Load a specific checkpoint."""
@@ -592,6 +691,56 @@ async def get_all_history():
     return sim_manager.get_history_data()
 
 
+@app.post("/upload_checkpoint")
+async def upload_checkpoint(file: UploadFile = File(...), checkpoint_name: str = Form(...)):
+    """Upload and extract a checkpoint zip file."""
+    try:
+        # Validate file type
+        if not file.filename.endswith('.zip'):
+            raise HTTPException(status_code=400, detail="Only ZIP files are allowed")
+        
+        # Validate checkpoint name
+        if not checkpoint_name or not checkpoint_name.strip():
+            raise HTTPException(status_code=400, detail="Checkpoint name is required")
+        
+        # Clean checkpoint name (remove potentially dangerous characters)
+        checkpoint_name = "".join(c for c in checkpoint_name.strip() if c.isalnum() or c in (' ', '-', '_')).strip()
+        if not checkpoint_name:
+            raise HTTPException(status_code=400, detail="Invalid checkpoint name")
+        
+        # Create temporary file for upload
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+        
+        try:
+            # Save uploaded file
+            content = await file.read()
+            temp_file.write(content)
+            temp_file.close()
+            
+            # Extract and validate checkpoint
+            final_path = sim_manager.extract_and_validate_checkpoint(temp_file.name, checkpoint_name)
+            
+            return {
+                "success": True, 
+                "message": f"Checkpoint '{checkpoint_name}' uploaded successfully",
+                "checkpoint_path": final_path
+            }
+            
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_file.name):
+                os.unlink(temp_file.name)
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+
 # === TRAINING ENDPOINTS (Train Tab) ===
 
 @app.post("/start_training")
@@ -732,4 +881,4 @@ async def run_simulation_loop():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False) 
